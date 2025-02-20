@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
 
 export default function PdfList() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedDoc, setExpandedDoc] = useState(null);
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -59,35 +59,35 @@ export default function PdfList() {
       {documents.length === 0 ? (
         <p>No documents uploaded yet</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {documents.map((doc) => (
-            <li key={doc.id} className="p-4 border rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">{doc.file_name}</span>
-                <div className="space-x-2">
-                  <button
-                    onClick={() => setExpandedDoc(expandedDoc === doc.id ? null : doc.id)}
-                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-                  >
-                    {expandedDoc === doc.id ? 'Hide Text' : 'Show Text'}
-                  </button>
-                  <button
-                    onClick={() => downloadPdf(doc.file_path)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    Download
-                  </button>
+            <li key={doc.id} className="p-4 border rounded-lg hover:shadow-lg transition-shadow">
+              <Link href={`/pdf/${doc.id}`}>
+                <div className="cursor-pointer">
+                  <div className="aspect-w-3 aspect-h-4 bg-gray-100 rounded-lg mb-3">
+                    {/* PDF preview placeholder */}
+                    <div className="flex items-center justify-center">
+                      <svg
+                        className="w-12 h-12 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <h3 className="font-medium truncate">{doc.file_name}</h3>
+                  <p className="text-sm text-gray-500">
+                    {new Date(doc.created_at).toLocaleDateString()}
+                  </p>
                 </div>
-              </div>
-              <p className="text-sm text-gray-500 mt-2">
-                Uploaded on {new Date(doc.created_at).toLocaleDateString()}
-              </p>
-              {expandedDoc === doc.id && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-bold mb-2">Extracted Text:</h3>
-                  <p className="whitespace-pre-wrap text-sm">{doc.extracted_text}</p>
-                </div>
-              )}
+              </Link>
             </li>
           ))}
         </ul>
