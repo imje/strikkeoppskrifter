@@ -6,7 +6,11 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 // Set up the worker
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  const workerUrl = new URL(
+    'pdfjs-dist/build/pdf.worker.min.js',
+    import.meta.url
+  );
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 }
 
 export default function PdfUploader() {
