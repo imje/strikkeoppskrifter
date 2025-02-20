@@ -3,8 +3,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import * as pdfjsLib from 'pdfjs-dist';
+import { PDFWorker } from 'pdfjs-dist/build/pdf.worker.mjs';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set up the worker
+if (typeof window !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
+}
 
 export default function PdfUploader() {
   const [text, setText] = useState('');
