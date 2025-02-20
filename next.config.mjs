@@ -1,17 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   webpack: (config) => {
+    // Disable node-specific modules
     config.resolve.alias.canvas = false;
     config.resolve.alias.encoding = false;
-    
-    // Add rule for pdf.worker
-    config.module.rules.push({
-      test: /pdf\.worker\.(min\.)?js/,
-      type: 'asset/resource',
-      generator: {
-        filename: 'static/worker/[hash][ext][query]',
-      },
-    });
+
+    // Handle PDF.js worker
+    config.resolve.alias['pdfjs-dist/build/pdf.worker.min'] = 'pdfjs-dist/build/pdf.worker.min.js';
     
     return config;
   },

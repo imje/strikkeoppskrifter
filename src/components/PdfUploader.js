@@ -4,13 +4,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set up the worker
+// Set up PDF.js worker
 if (typeof window !== 'undefined') {
-  const workerUrl = new URL(
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.js',
-    import.meta.url
-  );
-  pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+    import.meta.url,
+  ).toString();
 }
 
 export default function PdfUploader() {
