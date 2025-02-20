@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import * as pdfjsLib from 'pdfjs-dist';
 
-// Set up PDF.js worker
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.js',
-    import.meta.url,
-  ).toString();
-}
+// Dynamically import PDF.js only on client side
+const initPdfLib = async () => {
+  if (typeof window === 'undefined') return null;
+  const pdfjsLib = await import('pdfjs-dist/build/pdf');
+  const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.entry');
+  
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+  return pdfjsLib;
+};
 
 export default function PdfUploader() {
   const [text, setText] = useState('');
@@ -18,6 +19,9 @@ export default function PdfUploader() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
+    // Initialize PDF.js when component mounts
+    initPdfLib().catch(console.error);
+    
     // Get current user
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -35,18 +39,28 @@ export default function PdfUploader() {
   }, []);
 
   const extractText = async (file) => {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-    let fullText = '';
-    
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
-      fullText += pageText + '\n';
+    const pdfjsLib = await initPdfLib();
+    if (!pdfjsLib) {
+      throw new Error('PDF.js failed to initialize');
     }
-    
-    return fullText;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument(new Uint8Array(arrayBuffer)).promise;
+      let fullText = '';
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      
+      return fullText;
+    } catch (error) {
+      console.error('PDF extraction error:', error);
+      throw new Error('Failed to extract text from PDF');
+    }
   };
 
   const handleFileUpload = async (e) => {
@@ -66,8 +80,9 @@ export default function PdfUploader() {
       console.log('Starting PDF processing...');
 
       // Extract text from PDF
+      let extractedText;
       try {
-        const extractedText = await extractText(file);
+        extractedText = await extractText(file);
         console.log('Text extracted successfully:', extractedText.substring(0, 100) + '...');
         setText(extractedText);
       } catch (extractError) {
@@ -80,7 +95,7 @@ export default function PdfUploader() {
       const filePath = `${user.id}/${fileName}`;
       
       console.log('Uploading to Supabase storage...');
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('pdfs')
         .upload(filePath, file);
 
