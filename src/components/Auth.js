@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export default function Auth() {
@@ -8,6 +8,24 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Get current user
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+
+    getCurrentUser();
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -33,6 +51,34 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  if (user) {
+    return (
+      <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-600">Signed in as:</p>
+            <p className="font-medium">{user.email}</p>
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
