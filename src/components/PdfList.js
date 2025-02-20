@@ -84,37 +84,34 @@ export default function PdfList() {
           {documents.map((doc) => (
             <li key={doc.id} className="p-4 border rounded-lg hover:shadow-lg transition-shadow">
               <Link href={`/pdf/${doc.id}`}>
-                <div className="cursor-pointer">
-                  <div className="aspect-w-3 aspect-h-4 bg-gray-100 rounded-lg mb-3 overflow-hidden">
-                    {doc.thumbnailUrl ? (
-                      <div className="relative w-full h-32">
-                        <Image
-                          src={doc.thumbnailUrl}
-                          alt={doc.file_name}
-                          fill
-                          style={{ objectFit: 'contain' }}
-                          priority
+                <div className="cursor-pointer flex flex-col items-center">
+                  {doc.thumbnailUrl ? (
+                    <div className="relative w-20 h-20 mb-2">
+                      <Image
+                        src={doc.thumbnailUrl}
+                        alt={doc.file_name}
+                        fill
+                        style={{ objectFit: 'contain' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center w-20 h-20 mb-2 bg-gray-100">
+                      <svg
+                        className="w-10 h-10 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
                         />
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-32">
-                        <svg
-                          className="w-12 h-12 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="font-medium truncate">{doc.file_name}</h3>
+                      </svg>
+                    </div>
+                  )}
+                  <h3 className="font-medium text-center truncate">{doc.file_name}</h3>
                   <p className="text-sm text-gray-500">
                     {new Date(doc.created_at).toLocaleDateString()}
                   </p>
