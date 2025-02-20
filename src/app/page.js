@@ -1,5 +1,3 @@
-'use client';
-
 import PdfUploader from '@/components/PdfUploader';
 import PdfList from '@/components/PdfList';
 
