@@ -57,21 +57,35 @@ export default function PdfUploader() {
         return;
       }
 
+      console.log('Starting PDF processing...');
+
       // Extract text from PDF
-      const extractedText = await extractText(file);
-      setText(extractedText);
+      try {
+        const extractedText = await extractText(file);
+        console.log('Text extracted successfully:', extractedText.substring(0, 100) + '...');
+        setText(extractedText);
+      } catch (extractError) {
+        console.error('Error extracting text:', extractError);
+        throw new Error('Failed to extract text from PDF');
+      }
 
       // Upload to Supabase Storage
       const fileName = `${Date.now()}-${file.name}`;
       const filePath = `${user.id}/${fileName}`;
       
-      const { error: uploadError } = await supabase.storage
+      console.log('Uploading to Supabase storage...');
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('pdfs')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
+      console.log('File uploaded successfully');
 
       // Store document metadata in the database
+      console.log('Saving to database...');
       const { error: dbError } = await supabase
         .from('pdf_documents')
         .insert({
@@ -81,11 +95,19 @@ export default function PdfUploader() {
           extracted_text: extractedText
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database error:', dbError);
+        throw dbError;
+      }
+
+      console.log('Document processed and saved successfully');
+      alert('PDF uploaded successfully!');
+      setText(''); // Clear the text display
+      e.target.value = ''; // Reset the file input
       
     } catch (error) {
       console.error('Error:', error);
-      alert('Error processing PDF');
+      alert(`Error processing PDF: ${error.message}`);
     } finally {
       setLoading(false);
     }
