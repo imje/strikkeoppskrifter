@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
   webpack: (config) => {
     config.resolve.alias.canvas = false;
     config.resolve.fallback = {
@@ -7,7 +17,6 @@ const nextConfig = {
       fs: false,
       path: false,
       encoding: false,
-      url: false,
     };
     return config;
   },
