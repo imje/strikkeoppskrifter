@@ -1,5 +1,6 @@
 import PdfUploader from '@/components/PdfUploader';
 import PdfList from '@/components/PdfList';
+import Auth from '@/components/Auth';
 
 export default function Home() {
   return (
@@ -7,6 +8,11 @@ export default function Home() {
       <main className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">PDF Upload and Management</h1>
         
+        {/* Auth Section */}
+        <section className="mb-8">
+          <Auth />
+        </section>
+
         {/* PDF Upload Section */}
         <section className="mb-8">
           <h2 className="text-xl font-bold mb-4">Upload New PDF</h2>
