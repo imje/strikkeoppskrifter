@@ -11,11 +11,19 @@
   :root {
     --background: #391212;
     --foreground: #EDDBC2;
+    --mainheader: #8FA4D1;
   }
+}
+
+h1 {
+  color: var(--mainheader)
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  
 }
+
+
