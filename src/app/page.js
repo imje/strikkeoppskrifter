@@ -14,7 +14,7 @@ export default function Home() {
   return (
     <section>
       <div className="flex items-center gap-4 mb-8">
-        <h2 className="text-2xl font-bold">Strikkeoppskrifter</h2>
+        <h1 className="text-2xl font-bold">Mine strikkeoppskrifter</h1>
         <PdfUploader onUploadSuccess={handleUploadSuccess} />
       </div>
       <PdfList newDocument={newDocument} onUploadSuccess={handleUploadSuccess} />

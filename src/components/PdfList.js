@@ -93,9 +93,9 @@ export default function PdfList({ newDocument, onUploadSuccess }) {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="mt-8">
+    <div>
       {documents.length === 0 ? (
-        <p>No documents uploaded yet</p>
+        <p className="text-center mt-8">No documents uploaded yet</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {documents.map((doc) => (
