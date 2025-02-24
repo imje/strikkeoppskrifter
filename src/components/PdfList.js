@@ -49,8 +49,18 @@ export default function PdfList({ newDocument }) {
   useEffect(() => {
     if (newDocument) {
       const updateDocuments = async () => {
-        const docWithUrl = await addSignedUrl(newDocument);
-        setDocuments(prev => [docWithUrl, ...prev]);
+        // If it's an optimistic document (has temp- prefix)
+        if (newDocument.id.startsWith('temp-')) {
+          setDocuments(prev => [newDocument, ...prev]);
+        } else {
+          // Real document with thumbnail
+          const docWithUrl = await addSignedUrl(newDocument);
+          setDocuments(prev => {
+            // Remove optimistic version if it exists
+            const filtered = prev.filter(doc => !doc.id.startsWith('temp-'));
+            return [docWithUrl, ...filtered];
+          });
+        }
       };
       updateDocuments();
     }

@@ -114,6 +114,21 @@ export default function PdfUploader({ onUploadSuccess }) {
         return;
       }
 
+      // Create optimistic document data
+      const timestamp = Date.now();
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const optimisticDoc = {
+        id: `temp-${timestamp}`,
+        file_name: sanitizedFileName,
+        created_at: new Date().toISOString(),
+      };
+
+      // Immediately call onUploadSuccess with optimistic data
+      if (onUploadSuccess) {
+        onUploadSuccess(optimisticDoc);
+      }
+
+      // Continue with actual upload process in background
       console.log('Starting upload process...');
 
       // Generate thumbnail
@@ -140,8 +155,6 @@ export default function PdfUploader({ onUploadSuccess }) {
       }
 
       // Create file paths
-      const timestamp = Date.now();
-      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const fileName = `${timestamp}-${sanitizedFileName}`;
       const filePath = `${user.id}/${fileName}`;
       const thumbnailPath = `${user.id}/thumbnails/${timestamp}-thumbnail.jpg`;
@@ -224,7 +237,12 @@ export default function PdfUploader({ onUploadSuccess }) {
           className="hidden"
           disabled={loading}
         />
-        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors">
+        <div 
+          className="w-12 h-12 rounded-full flex items-center justify-center cursor-pointer transition-colors"
+          style={{
+            backgroundColor: 'var(--mainheader)',
+          }}
+        >
           <svg 
             className="w-6 h-6 text-white" 
             fill="none" 
@@ -240,13 +258,6 @@ export default function PdfUploader({ onUploadSuccess }) {
           </svg>
         </div>
       </label>
-      {loading && <p>Processing...</p>}
-      {text && (
-        <div className="mt-4 p-4 border rounded-lg">
-          <h3 className="font-bold mb-2">Extracted Text:</h3>
-          <p className="whitespace-pre-wrap">{text}</p>
-        </div>
-      )}
     </div>
   );
 } 
