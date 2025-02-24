@@ -216,13 +216,30 @@ export default function PdfUploader({ onUploadSuccess }) {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <input
-        type="file"
-        accept=".pdf"
-        onChange={handleFileUpload}
-        className="mb-4"
-        disabled={loading}
-      />
+      <label className="relative inline-block">
+        <input
+          type="file"
+          accept=".pdf"
+          onChange={handleFileUpload}
+          className="hidden"
+          disabled={loading}
+        />
+        <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors">
+          <svg 
+            className="w-6 h-6 text-white" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M12 4v16m8-8H4" 
+            />
+          </svg>
+        </div>
+      </label>
       {loading && <p>Processing...</p>}
       {text && (
         <div className="mt-4 p-4 border rounded-lg">
