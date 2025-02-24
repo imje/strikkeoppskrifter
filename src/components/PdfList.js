@@ -131,7 +131,9 @@ export default function PdfList({ newDocument, onUploadSuccess }) {
                 </div>
               </Link>
               <Link href={`/pdf/${doc.id}`} className="text-center">
-                <h3 className="text-lg font-normal">{doc.file_name}</h3>
+                <h3 className="text-lg font-normal">
+                  {doc.file_name.replace(/\.pdf$/i, '')}
+                </h3>
               </Link>
             </div>
           ))}

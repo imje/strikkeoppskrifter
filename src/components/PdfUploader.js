@@ -116,7 +116,9 @@ export default function PdfUploader({ onUploadSuccess }) {
 
       // Create optimistic document data
       const timestamp = Date.now();
-      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const sanitizedFileName = file.name
+        .replace(/[^a-zA-Z0-9.-]/g, '_')
+        .replace(/\.pdf$/i, ''); // Remove .pdf extension
       const optimisticDoc = {
         id: `temp-${timestamp}`,
         file_name: sanitizedFileName,
