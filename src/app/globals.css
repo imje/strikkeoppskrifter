@@ -3,16 +3,17 @@
 @tailwind utilities;
 
 :root {
-  --background: #FFFBF0;
-  --foreground: #171717;
+  /* Light mode colors */
+  --background: #EDDBC2;
+  --foreground: #391212;
+  --mainheader: #2A20AA;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #391212;
-    --foreground: #EDDBC2;
-    --mainheader: #8FA4D1;
-  }
+:root.dark {
+  /* Dark mode colors */
+  --background: #391212;
+  --foreground: #EDDBC2;
+  --mainheader: #8FA4D1;
 }
 
 body {
@@ -28,5 +29,3 @@ h1, h2 {
 h1 {
   color: var(--mainheader)
 }
-
-
