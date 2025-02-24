@@ -25,9 +25,11 @@ body {
 }
 
 h1, h2 {
-  font-family: 'Old English Text MT', 'Times New Roman', serif;
+  font-family: inherit;
 }
 
 h1 {
-  color: var(--mainheader)
+  color: var(--mainheader);
+  font-size: 2.5rem;  /* or 40px */
+  font-weight: 700;
 }

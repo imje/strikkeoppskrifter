@@ -1,10 +1,14 @@
-import { Inter } from 'next/font/google'
+import { Inter, Playfair_Display } from 'next/font/google'
 import "./globals.css";
 import { ThemeProvider } from '@/components/ThemeProvider';
 import ThemeToggle from '@/components/ThemeToggle';
 import Auth from '@/components/Auth';
 
 const inter = Inter({ subsets: ['latin'] })
+const playfair = Playfair_Display({ 
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 export const metadata = {
   title: "Mine Strikkeoppskrifter",
@@ -24,7 +28,12 @@ export default function RootLayout({ children }) {
               <ThemeToggle />
             </div>
           </div>
-          {children}
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h1 className={`${playfair.className} text-4xl font-bold mb-8`}>
+              Mine strikkeoppskrifter
+            </h1>
+            {children}
+          </div>
         </ThemeProvider>
       </body>
     </html>
