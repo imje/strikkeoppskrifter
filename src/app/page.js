@@ -17,11 +17,6 @@ export default function Home() {
       <main className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Mine strikkeoppskrifter</h1>
         
-        {/* Auth Section */}
-        <section className="mb-8">
-          <Auth />
-        </section>
-
         {/* PDF Upload Section */}
         <section className="mb-8">
           <h2 className="text-xl font-bold mb-4">Last opp ny pdf</h2>
