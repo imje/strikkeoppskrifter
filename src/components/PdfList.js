@@ -5,14 +5,27 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
 
-export default function PdfList() {
+export default function PdfList({ newDocument }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const addSignedUrl = async (doc) => {
+    if (doc.thumbnail_path) {
+      const { data } = await supabase.storage
+        .from('pdfs')
+        .createSignedUrl(doc.thumbnail_path, 60 * 60); // 1 hour expiry
+
+      return {
+        ...doc,
+        thumbnailUrl: data?.signedUrl
+      };
+    }
+    return doc;
+  };
 
   useEffect(() => {
     const fetchDocuments = async () => {
       try {
-        // Fetch documents
         const { data: docs, error } = await supabase
           .from('pdf_documents')
           .select('*')
@@ -20,25 +33,8 @@ export default function PdfList() {
 
         if (error) throw error;
 
-        // Get signed URLs for thumbnails
-        const docsWithUrls = await Promise.all(
-          docs.map(async (doc) => {
-            if (doc.thumbnail_path) {
-              const { data } = await supabase.storage
-                .from('pdfs')
-                .createSignedUrl(doc.thumbnail_path, 60 * 60); // 1 hour expiry
-
-              return {
-                ...doc,
-                thumbnailUrl: data?.signedUrl
-              };
-            }
-            return doc;
-          })
-        );
-
+        const docsWithUrls = await Promise.all(docs.map(addSignedUrl));
         setDocuments(docsWithUrls);
-        console.log('Documents with URLs:', docsWithUrls); // Debug log
       } catch (error) {
         console.error('Error fetching documents:', error);
       } finally {
@@ -48,6 +44,17 @@ export default function PdfList() {
 
     fetchDocuments();
   }, []);
+
+  // Add new document to the list when it's uploaded
+  useEffect(() => {
+    if (newDocument) {
+      const updateDocuments = async () => {
+        const docWithUrl = await addSignedUrl(newDocument);
+        setDocuments(prev => [docWithUrl, ...prev]);
+      };
+      updateDocuments();
+    }
+  }, [newDocument]);
 
   const downloadPdf = async (filePath) => {
     try {

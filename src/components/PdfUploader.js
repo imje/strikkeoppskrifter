@@ -13,7 +13,7 @@ const initPdfLib = async () => {
   return pdfjsLib;
 };
 
-export default function PdfUploader() {
+export default function PdfUploader({ onUploadSuccess }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
@@ -177,7 +177,7 @@ export default function PdfUploader() {
 
       console.log('Saving to database...');
       // Save to database
-      const { error: dbError } = await supabase
+      const { data: dbData, error: dbError } = await supabase
         .from('pdf_documents')
         .insert({
           user_id: user.id,
@@ -185,7 +185,9 @@ export default function PdfUploader() {
           file_path: filePath,
           thumbnail_path: thumbnailPath,
           extracted_text: extractedText
-        });
+        })
+        .select()
+        .single();
 
       if (dbError) {
         console.error('Database error:', dbError);
@@ -193,7 +195,10 @@ export default function PdfUploader() {
       }
 
       console.log('Upload completed successfully');
-      alert('PDF uploaded successfully!');
+      // Call the callback with the new document
+      if (onUploadSuccess) {
+        onUploadSuccess(dbData);
+      }
       setText('');
       e.target.value = '';
 
