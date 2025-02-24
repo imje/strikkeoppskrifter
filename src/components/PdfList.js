@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import Image from 'next/image';
+import PdfUploader from './PdfUploader';
 
-export default function PdfList({ newDocument }) {
+export default function PdfList({ newDocument, onUploadSuccess }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -93,7 +94,6 @@ export default function PdfList({ newDocument }) {
 
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-bold mb-8">Your Documents</h2>
       {documents.length === 0 ? (
         <p>No documents uploaded yet</p>
       ) : (

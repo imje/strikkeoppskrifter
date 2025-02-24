@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import PdfUploader from '@/components/PdfUploader';
 import PdfList from '@/components/PdfList';
-import Auth from '@/components/Auth';
+import PdfUploader from '@/components/PdfUploader';
 
 export default function Home() {
   const [newDocument, setNewDocument] = useState(null);
@@ -13,17 +12,12 @@ export default function Home() {
   };
 
   return (
-    <>
-      {/* PDF Upload Section */}
-      <section className="mb-8">
-        <h2 className="text-xl font-bold mb-4">Last opp ny pdf</h2>
+    <section>
+      <div className="flex items-center gap-4 mb-8">
+        <h1 className="text-2xl font-bold">Strikkeoppskrifter</h1>
         <PdfUploader onUploadSuccess={handleUploadSuccess} />
-      </section>
-
-      {/* PDF List Section */}
-      <section>
-        <PdfList newDocument={newDocument} />
-      </section>
-    </>
+      </div>
+      <PdfList newDocument={newDocument} onUploadSuccess={handleUploadSuccess} />
+    </section>
   );
 }
