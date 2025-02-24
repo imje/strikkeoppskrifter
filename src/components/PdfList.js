@@ -76,28 +76,28 @@ export default function PdfList() {
 
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-bold mb-4">Your Documents</h2>
+      <h2 className="text-xl font-bold mb-8">Your Documents</h2>
       {documents.length === 0 ? (
         <p>No documents uploaded yet</p>
       ) : (
-        <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {documents.map((doc) => (
-            <li key={doc.id} className="p-4 border rounded-lg hover:shadow-lg transition-shadow">
-              <Link href={`/pdf/${doc.id}`}>
-                <div className="cursor-pointer flex flex-col items-center">
+            <div key={doc.id} className="flex flex-col items-center">
+              <Link href={`/pdf/${doc.id}`} className="mb-3">
+                <div className="w-48 h-48 rounded-full overflow-hidden bg-gray-100">
                   {doc.thumbnailUrl ? (
-                    <div className="relative w-20 h-20 mb-2">
-                      <Image
-                        src={doc.thumbnailUrl}
-                        alt={doc.file_name}
-                        fill
-                        style={{ objectFit: 'contain' }}
-                      />
-                    </div>
+                    <Image
+                      src={doc.thumbnailUrl}
+                      alt={doc.file_name}
+                      width={192}
+                      height={192}
+                      style={{ objectFit: 'cover' }}
+                      className="w-full h-full"
+                    />
                   ) : (
-                    <div className="flex items-center justify-center w-20 h-20 mb-2 bg-gray-100">
+                    <div className="flex items-center justify-center w-full h-full">
                       <svg
-                        className="w-10 h-10 text-gray-400"
+                        className="w-12 h-12 text-gray-400"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -111,15 +111,14 @@ export default function PdfList() {
                       </svg>
                     </div>
                   )}
-                  <h3 className="font-medium text-center truncate">{doc.file_name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {new Date(doc.created_at).toLocaleDateString()}
-                  </p>
                 </div>
               </Link>
-            </li>
+              <Link href={`/pdf/${doc.id}`} className="text-center">
+                <h3 className="text-lg font-normal">{doc.file_name}</h3>
+              </Link>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
