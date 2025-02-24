@@ -28,8 +28,8 @@ export default function RootLayout({ children }) {
               <ThemeToggle />
             </div>
           </div>
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <h1 className={`${playfair.className} text-4xl font-bold mb-8`}>
+          <div className="max-w-5xl mx-auto px-8 sm:px-12 lg:px-16 py-12">
+            <h1 className={`${playfair.className} text-4xl font-bold mb-12`}>
               Mine strikkeoppskrifter
             </h1>
             {children}
