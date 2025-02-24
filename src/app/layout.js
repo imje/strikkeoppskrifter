@@ -20,18 +20,16 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
         <ThemeProvider>
-          <div className="fixed top-4 right-4 flex items-center gap-12">
-            <div className="relative">
-              <Auth />
-            </div>
-            <div className="relative">
-              <ThemeToggle />
-            </div>
-          </div>
           <div className="max-w-5xl mx-auto px-8 sm:px-12 lg:px-16 py-12">
-            <h1 className={`${playfair.className} text-4xl font-bold mb-12`}>
-              Mine strikkeoppskrifter
-            </h1>
+            <div className="flex justify-between items-center mb-12">
+              <h1 className={`${playfair.className} text-4xl font-bold`}>
+                Mine strikkeoppskrifter
+              </h1>
+              <div className="flex items-center gap-4">
+                <ThemeToggle />
+                <Auth />
+              </div>
+            </div>
             {children}
           </div>
         </ThemeProvider>

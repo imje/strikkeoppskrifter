@@ -8,7 +8,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="fixed top-4 right-4 p-2 rounded-lg"
+      className="p-2 rounded-lg"
       aria-label="Toggle theme"
     >
       {theme === 'light' ? '🖤' : '💛'}
