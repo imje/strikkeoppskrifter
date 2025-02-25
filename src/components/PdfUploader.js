@@ -123,6 +123,14 @@ export default function PdfUploader({ onUploadSuccess }) {
   };
 
   const toTitleCase = (str) => {
+    // First, check if this is a spaced-out string with multiple capital letters
+    if (str.split(' ').filter(char => char.match(/^[A-ZÆØÅ]$/)).length > 2) {
+      // Join all letters and convert to title case
+      const joined = str.replace(/\s+/g, '');
+      return joined.charAt(0).toUpperCase() + joined.slice(1).toLowerCase();
+    }
+
+    // Normal title case handling for other strings
     return str
       .toLowerCase()
       .split(' ')
@@ -179,7 +187,6 @@ export default function PdfUploader({ onUploadSuccess }) {
           if (!potentialTitle.match(/^[XSMLxsml0-9()\s]+$/) && 
               potentialTitle.length >= 3 && 
               potentialTitle.match(/[a-zA-ZæøåÆØÅ]/)) {
-            // Convert to title case before returning
             return toTitleCase(potentialTitle);
           }
         }
