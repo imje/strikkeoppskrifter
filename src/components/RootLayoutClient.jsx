@@ -19,7 +19,6 @@ export default function RootLayoutClient({ children }) {
           <h1 className={`${playfair.className} text-4xl font-bold`}>
             Mine strikkeoppskrifter
           </h1>
-          <PdfUploader />
         </div>
         <div className="flex items-center gap-4">
           <ThemeToggle />
