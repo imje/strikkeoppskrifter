@@ -113,33 +113,57 @@ export default function PdfList({ newDocument, onUploadSuccess }) {
           {documents.map((doc) => (
             <div key={doc.id} className="flex flex-col items-center">
               <Link href={`/pdf/${doc.id}`} className="mb-3">
-                <div className="w-48 h-48 rounded-full overflow-hidden bg-gray-100">
-                  {doc.thumbnailUrl ? (
-                    <Image
-                      src={doc.thumbnailUrl}
-                      alt={doc.file_name}
-                      width={192}
-                      height={192}
-                      style={{ objectFit: 'cover' }}
-                      className="w-full h-full"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center w-full h-full">
-                      <svg
-                        className="w-12 h-12 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
+                <div className="w-48 h-48 relative">
+                  <svg
+                    viewBox="0 0 200 200"
+                    className="w-full h-full absolute top-0 left-0"
+                  >
+                    <defs>
+                      <clipPath id="blob-shape">
                         <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                          d="M45.3,-59.6C61.1,-50.9,77.8,-40.8,82.7,-26.7C87.7,-12.5,80.8,5.8,72.7,21.5C64.7,37.2,55.5,50.5,43.2,60.6C30.9,70.6,15.4,77.5,-1.4,79.5C-18.3,81.4,-36.5,78.4,-49.4,68.5C-62.3,58.6,-69.9,41.9,-74.7,24.8C-79.5,7.7,-81.5,-9.7,-76.8,-25.2C-72.1,-40.7,-60.7,-54.2,-46.7,-63.5C-32.8,-72.8,-16.4,-77.8,-0.8,-76.7C14.8,-75.6,29.5,-68.3,45.3,-59.6Z"
+                          transform="translate(100 100)"
                         />
-                      </svg>
-                    </div>
-                  )}
+                      </clipPath>
+                    </defs>
+                    <path
+                      d="M45.3,-59.6C61.1,-50.9,77.8,-40.8,82.7,-26.7C87.7,-12.5,80.8,5.8,72.7,21.5C64.7,37.2,55.5,50.5,43.2,60.6C30.9,70.6,15.4,77.5,-1.4,79.5C-18.3,81.4,-36.5,78.4,-49.4,68.5C-62.3,58.6,-69.9,41.9,-74.7,24.8C-79.5,7.7,-81.5,-9.7,-76.8,-25.2C-72.1,-40.7,-60.7,-54.2,-46.7,-63.5C-32.8,-72.8,-16.4,-77.8,-0.8,-76.7C14.8,-75.6,29.5,-68.3,45.3,-59.6Z"
+                      transform="translate(100 100)"
+                      fill="var(--background)"
+                      className="drop-shadow-md"
+                    />
+                  </svg>
+                  <div 
+                    className="absolute inset-0 overflow-hidden"
+                    style={{ clipPath: "url(#blob-shape)" }}
+                  >
+                    {doc.thumbnailUrl ? (
+                      <Image
+                        src={doc.thumbnailUrl}
+                        alt={doc.file_name}
+                        width={192}
+                        height={192}
+                        style={{ objectFit: 'cover' }}
+                        className="w-full h-full"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center w-full h-full">
+                        <svg
+                          className="w-12 h-12 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </Link>
               <Link href={`/pdf/${doc.id}`} className="text-center">
