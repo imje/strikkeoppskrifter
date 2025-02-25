@@ -174,8 +174,9 @@ export default function PdfUploader({ onUploadSuccess }) {
         .replace(/[^a-zA-Z0-9.-]/g, '_')
         .replace(/\.pdf$/i, ''); // Remove .pdf extension
       const optimisticDoc = {
-        id: `temp-${timestamp}`,
+        id: `temp-${sanitizedFileName}`,
         file_name: sanitizedFileName,
+        display_title: sanitizedFileName,
         created_at: new Date().toISOString(),
       };
 
@@ -272,6 +273,16 @@ export default function PdfUploader({ onUploadSuccess }) {
       }
 
       console.log('Upload completed successfully');
+
+      if (dbData) {
+        // Pass the complete document data
+        onUploadSuccess({
+          ...dbData,
+          display_title: displayTitle,
+          file_name: sanitizedFileName,
+          thumbnailUrl: null // Will be added by PdfList component
+        });
+      }
     } catch (error) {
       console.error('Error in handleFileUpload:', error);
       alert('An error occurred while uploading the file. Please try again later.');
