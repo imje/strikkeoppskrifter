@@ -102,14 +102,7 @@ export default function PdfUploader({ onUploadSuccess }) {
 
   const extractPdfTitle = async (pdf) => {
     try {
-      // Try to get title from metadata first
-      const metadata = await pdf.getMetadata();
-      if (metadata?.info?.Title) {
-        const title = metadata.info.Title.trim();
-        if (title.length > 0 && title.length < 100) return title;
-      }
-
-      // If no metadata title, try to get from first page content
+      // Get text from first page
       const firstPage = await pdf.getPage(1);
       const textContent = await firstPage.getTextContent();
       
