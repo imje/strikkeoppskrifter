@@ -50,18 +50,28 @@ export default function PdfList({ newDocument, onUploadSuccess }) {
   useEffect(() => {
     if (newDocument) {
       const updateDocuments = async () => {
+        console.log('Updating documents with:', newDocument); // Debug log
+
         if (newDocument.id.startsWith('temp-')) {
           // For optimistic updates
           setDocuments(prev => [newDocument, ...prev]);
         } else {
-          // For real document updates
+          // For real document updates, preserve the display_title
           const docWithUrl = await addSignedUrl(newDocument);
           setDocuments(prev => {
             // Remove any temporary version and add the real document
             const filtered = prev.filter(doc => 
               doc.id !== `temp-${newDocument.file_name}` && doc.id !== newDocument.id
             );
-            return [docWithUrl, ...filtered];
+            
+            // Preserve the display_title from newDocument
+            const finalDoc = {
+              ...docWithUrl,
+              display_title: newDocument.display_title // Ensure we keep the display_title
+            };
+            
+            console.log('Final document:', finalDoc); // Debug log
+            return [finalDoc, ...filtered];
           });
         }
       };
