@@ -8,6 +8,8 @@ export default function PdfPage() {
   const [document, setDocument] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sizes, setSizes] = useState([]);
+  const [measurements, setMeasurements] = useState({});
+  const [selectedSize, setSelectedSize] = useState(null);
   const params = useParams();
 
   const extractSizes = (text) => {
@@ -138,6 +140,67 @@ export default function PdfPage() {
     return sizeArray;
   };
 
+  const extractSizesAndMeasurements = (text) => {
+    const measurements = {};
+    const sizes = extractSizes(text); // Our existing function
+    
+    // Define all possible measurement patterns
+    const measurementPatterns = [
+      {
+        name: 'overvidde',
+        patterns: [
+          /(?:blusens |genserens |genseens )?overvidde\s*:\s*([^:]*?)(?=\s*(?:lengde|strikkefasthet|\d+\s*cm|\n|$))/i,
+          /omkrets\s*(?:cm)?\s*:\s*([^:]*?)(?=\s*(?:lengde|strikkefasthet|\d+\s*cm|\n|$))/i
+        ]
+      },
+      {
+        name: 'lengde',
+        patterns: [
+          /lengde\s*(?:cm)?:?\s*([^:]*?)(?=\s*(?:strikkefasthet|pinne|inkl|målt|\d+\s*cm|\n|$))/i
+        ]
+      }
+    ];
+
+    // Extract numbers for each measurement type
+    measurementPatterns.forEach(({ name, patterns }) => {
+      let found = false;
+      
+      // Try each pattern until we find a match
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match && match[1] && !found) {
+          const measurementText = match[1].trim();
+          
+          // Extract all numbers (both regular and parenthesized)
+          const numbers = [];
+          const numberPattern = /(\d+)(?:\s*\((\d+)\))?/g;
+          let numberMatch;
+          
+          while ((numberMatch = numberPattern.exec(measurementText)) !== null) {
+            if (numberMatch[1]) numbers.push(parseInt(numberMatch[1]));
+            if (numberMatch[2]) numbers.push(parseInt(numberMatch[2]));
+          }
+
+          // Map numbers to sizes if they match
+          if (numbers.length === sizes.length) {
+            sizes.forEach((size, index) => {
+              if (!measurements[size]) {
+                measurements[size] = {};
+              }
+              measurements[size][name] = numbers[index];
+            });
+            found = true;
+          }
+        }
+      }
+    });
+
+    return {
+      sizes,
+      measurements
+    };
+  };
+
   // Helper function to standardize size notation
   const standardizeSize = (size) => {
     size = size.toUpperCase();
@@ -176,12 +239,14 @@ export default function PdfPage() {
         if (error) throw error;
         setDocument(data);
         
-        // Extract sizes from the text
+        // Extract sizes and measurements from the text
         if (data.extracted_text) {
-          console.log('Extracting sizes from:', data.extracted_text); // Debug log
-          const extractedSizes = extractSizes(data.extracted_text);
-          console.log('Setting sizes to:', extractedSizes); // Debug log
-          setSizes(extractedSizes);
+          console.log('Extracting sizes and measurements from:', data.extracted_text); // Debug log
+          const { sizes, measurements } = extractSizesAndMeasurements(data.extracted_text);
+          console.log('Setting sizes to:', sizes); // Debug log
+          console.log('Setting measurements to:', measurements); // Debug log
+          setSizes(sizes);
+          setMeasurements(measurements);
         }
       } catch (error) {
         console.error('Error fetching document:', error);
@@ -206,12 +271,26 @@ export default function PdfPage() {
             <h2 className="text-lg font-semibold mb-2">Størrelser:</h2>
             <div className="flex flex-wrap gap-2">
               {sizes.map((size, index) => (
-                <span
+                <button
                   key={index}
-                  className="px-3 py-1 bg-[var(--mainheader)] text-white rounded-full text-sm"
+                  onClick={() => setSelectedSize(size)}
+                  className={`px-3 py-1 bg-[var(--mainheader)] text-white rounded-full text-sm ${
+                    selectedSize === size ? 'bg-blue-600' : 'bg-blue-100 hover:bg-blue-200'
+                  }`}
                 >
                   {size}
-                </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedSize && measurements[selectedSize] && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <h3 className="text-lg font-semibold mb-2">Mål for størrelse {selectedSize}:</h3>
+            <div className="space-y-2">
+              {Object.entries(measurements[selectedSize]).map(([key, value]) => (
+                <p key={key}>{formatMeasurementName(key)}: {value} cm</p>
               ))}
             </div>
           </div>
@@ -233,4 +312,13 @@ export default function PdfPage() {
       </main>
     </div>
   );
-} 
+}
+
+// Helper function to format measurement name
+const formatMeasurementName = (name) => {
+  const names = {
+    'overvidde': 'Omkretsen rundt det bredeste punktet på brystet',
+    'lengde': 'Lengde på plagget'
+  };
+  return names[name] || name;
+}; 
