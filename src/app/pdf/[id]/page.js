@@ -336,10 +336,6 @@ export default function PdfPage() {
           )}
         </div>
         
-        {/* Debug display */}
-        <div className="mb-4 text-gray-600">
-          <p>Debug - Detected Category: {document.category || 'None'}</p>
-        </div>
         
         {/* Size buttons */}
         <div className="flex flex-wrap gap-2 mb-4">
