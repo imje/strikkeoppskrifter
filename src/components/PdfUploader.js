@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { extractSizesAndMeasurements } from '@/lib/patternUtils';
 
 // Dynamically import PDF.js only on client side
 const initPdfLib = async () => {
@@ -265,6 +266,10 @@ export default function PdfUploader({ onUploadSuccess }) {
         extractedText += pageText + '\n';
       }
 
+      // Get category information
+      const { category, categoryName } = extractSizesAndMeasurements(extractedText);
+      console.log('Category info:', { category, categoryName }); // Debug log
+
       // Create file paths
       const fileName = `${timestamp}-${sanitizedFileName}`;
       const filePath = `${user.id}/${fileName}`;
@@ -309,7 +314,9 @@ export default function PdfUploader({ onUploadSuccess }) {
           display_title: displayTitle,
           file_path: filePath,
           thumbnail_path: thumbnailPath,
-          extracted_text: extractedText
+          extracted_text: extractedText,
+          category: category || null,
+          category_name: categoryName || null
         })
         .select()
         .single();
