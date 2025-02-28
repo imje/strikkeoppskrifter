@@ -233,76 +233,49 @@ export default function PdfUploader({ onUploadSuccess }) {
   };
 
   const formatTextWithBold = (text) => {
-    // Define all patterns that need to be handled
-    const patterns = [
-      {
-        pattern: /Blusens\s*\n*\s*overvidde:/g,
-        replacement: '\nBlusens overvidde:'
-      },
-      {
-        pattern: /Veiledende\s*\n*\s*pinner:/g,
-        replacement: '\nVeiledende pinner:'
-      },
-      {
-        pattern: /Genseens\s*\n*\s*overvidde:/g,
-        replacement: '\nGenseens overvidde:'
-      },
-      {
-        pattern: /Genserens\s*\n*\s*overvidde:/g,
-        replacement: '\nGenserens overvidde:'
-      },
-      {
-        pattern: /\b(Materialer|Material):/g,
-        replacement: '\n$1:'
-      },
-      {
-        pattern: /\b(Strikkefasthet|Strikkefastheten):/g,
-        replacement: '\n$1:'
-      },
-      {
-        pattern: /\b(Pinner|Pinneforslag):/g,
-        replacement: '\n$1:'
-      },
-      {
-        pattern: /\b(Overvidde):/g,
-        replacement: '\n$1:'
-      },
-      {
-        pattern: /\b(Garnforslag|Garn|Garnalternativ|Garnkvalitet):/g,
-        replacement: '\n$1:'
-      },
-      {
-        pattern: /\b(Størrelse|Størrelser|Str\.):/g,
-        replacement: '\n$1:'
-      },
-      {
-        pattern: /\b(Tilbehør):/g,
-        replacement: '\n$1:'
-      },
-      {
-        pattern: /\b(Mål):/g,
-        replacement: '\n$1:'
-      },
-      {
-        pattern: /\b(Lengde):/g,
-        replacement: '\n$1:'
-      },
-      {
-        pattern: /\b(Forkortelser):/g,
-        replacement: '\n$1:'
-      }
+    // Define the patterns in a more structured way
+    const multiWordTerms = [
+      'Blusens overvidde',
+      'Veiledende pinner',
+      'Genseens overvidde',
+      'Genserens overvidde'
+    ];
+
+    const singleWordTerms = [
+      'Materialer?',
+      'Strikkefasthet(?:en)?',
+      'Pinner|Pinneforslag',
+      'Overvidde',
+      'Garnforslag|Garn|Garnalternativ|Garnkvalitet',
+      'Størrelser?|Str\\.',
+      'Tilbehør',
+      'Mål',
+      'Lengde',
+      'Forkortelser'
     ];
 
     let formattedText = text;
 
-    // Apply all patterns
-    patterns.forEach(({ pattern, replacement }) => {
-      formattedText = formattedText.replace(pattern, replacement);
+    // First, fix any broken multi-word terms
+    multiWordTerms.forEach(term => {
+      const brokenPattern = new RegExp(`${term.split(' ').join('\\s*\\n*\\s*')}:`, 'g');
+      formattedText = formattedText.replace(brokenPattern, `\n${term}:`);
     });
 
-    // Now make all the terms bold
+    // Then handle single word terms
+    singleWordTerms.forEach(term => {
+      const pattern = new RegExp(`\\b(${term}):`, 'g');
+      formattedText = formattedText.replace(pattern, `\n$1:`);
+    });
+
+    // Finally, make all terms bold
+    const allTerms = [
+      ...multiWordTerms.map(term => term.replace(/\s+/g, '\\s+')),
+      ...singleWordTerms
+    ].join('|');
+    
     formattedText = formattedText.replace(
-      /((?:Blusens|Genseens|Genserens)\s+overvidde|Veiledende\s+pinner|Materialer?|Strikkefasthet(?:en)?|Pinner|Pinneforslag|Overvidde|Garnforslag|Garn|Garnalternativ|Garnkvalitet|Størrelser?|Str\.|Tilbehør|Mål|Lengde|Forkortelser):/g,
+      new RegExp(`(${allTerms}):`, 'g'),
       '<span class="font-bold">$1:</span>'
     );
 
