@@ -402,7 +402,9 @@ export default function PdfPage() {
       <main className="max-w-4xl mx-auto">
         {/* Title and Category Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-blue-900 mb-2">{document.file_name}</h1>
+          <h1 className="text-3xl font-bold text-blue-900 mb-2">
+            {document.display_title || document.file_name}
+          </h1>
           {document.category_name && (
             <span className="inline-block px-3 py-1 rounded-md bg-purple-100 text-purple-800 text-sm font-medium">
               {document.category_name}
