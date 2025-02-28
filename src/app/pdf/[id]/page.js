@@ -297,44 +297,41 @@ const highlightSizePosition = (text, selectedSize, sizes) => {
     const numbers = [];
     let sequenceCopy = sequence;
     
-    // Match either:
-    // - A dash/minus (– or -)
-    // - A number with optional:
-    //   - trailing period (15.)
-    //   - decimal (23,5)
-    //   - range (200-225)
-    // - All of the above in parentheses
     const numberPattern = /(\d+\.?(?:[,-]\d+)?|–|-)|(?:\((\d+\.?(?:[,-]\d+)?|–|-)\))/g;
     let match;
     
+    // Collect all numbers in this sequence
     while ((match = numberPattern.exec(sequenceCopy)) !== null) {
-      const number = match[1] || match[2]; // Get the number/dash whether it's in parentheses or not
-      const isInParentheses = match[2] !== undefined;
+      const number = match[1] || match[2];
       numbers.push({
         number,
         position: match.index,
         length: match[0].length,
-        isInParentheses
+        isInParentheses: match[2] !== undefined
       });
     }
 
-    // Group numbers by their position in the pattern
-    const groupedNumbers = [];
-    for (let i = 0; i < numbers.length; i++) {
-      if (i % sizes.length === sizeIndex) {
-        groupedNumbers.push(numbers[i]);
+    // Only process this sequence if it has enough numbers to be a valid pattern
+    // (at least the size of our sizes array)
+    if (numbers.length >= sizes.length) {
+      // Group numbers by their position in the pattern
+      const groupedNumbers = [];
+      for (let i = 0; i < numbers.length; i++) {
+        if (i % sizes.length === sizeIndex) {
+          groupedNumbers.push(numbers[i]);
+        }
       }
+
+      // Highlight each matching number in this valid sequence
+      groupedNumbers.reverse().forEach(({ number, position, length }) => {
+        const before = sequence.slice(0, position);
+        const after = sequence.slice(position + length);
+        const highlighted = `<span class="bg-yellow-200 px-1 rounded">${number}</span>`;
+        sequence = before + highlighted + after;
+      });
+
+      highlightedText = highlightedText.replace(sequenceCopy, sequence);
     }
-
-    // Highlight each matching number/dash, working backwards to maintain positions
-    groupedNumbers.reverse().forEach(({ number, position, length }) => {
-      const before = sequence.slice(0, position);
-      const after = sequence.slice(position + length);
-      const highlighted = `<span class="bg-yellow-200 px-1 rounded">${number}</span>`;
-      sequence = before + highlighted + after;
-    });
-
-    highlightedText = highlightedText.replace(sequenceCopy, sequence);
   });
 
   return highlightedText;
