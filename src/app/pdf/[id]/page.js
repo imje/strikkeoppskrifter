@@ -432,7 +432,6 @@ export default function PdfPage() {
           <p className="text-sm text-gray-500 mb-4">
             Uploaded on {new Date(document.created_at).toLocaleDateString()}
           </p>
-          <h2 className="text-xl font-bold mb-4">Extracted Text</h2>
           <div className="prose max-w-none">
             {document.extracted_text.split('\n\n').map((section, index) => (
               <div key={index} className="mb-4">
