@@ -256,15 +256,100 @@ export default function PdfUploader({ onUploadSuccess }) {
       const thumbnailBlob = await generateThumbnail(pdf);
       console.log('Thumbnail size:', thumbnailBlob.size, 'bytes');
 
-      // Extract text
+      // Extract text with formatting
       console.log('Extracting text...');
       let extractedText = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
-        extractedText += pageText + '\n';
+        const viewport = page.getViewport({ scale: 1.0 });
+        const pageHeight = viewport.height;
+        
+        let lastY, text = '';
+        const items = textContent.items;
+        
+        for (let j = 0; j < items.length; j++) {
+          const item = items[j];
+          
+          // Debug log for filtered items
+          const originalStr = item.str;
+          
+          // Filter out footer and copyright content regardless of position
+          const isFooterContent = 
+            // Social media and web patterns
+            (item.str.includes('@') && item.str.includes('www.')) ||           // Combined social media and web
+            (item.str.match(/^@[\w.]+$/)) ||                                   // Standalone social media handle
+            (item.str.match(/^www\.[\w.]+$/i)) ||                             // Standalone website URL
+            (item.str.includes('@') && item.str.includes('//')) ||            // Author with social media
+            
+            // Hashtags
+            (item.str.trim().startsWith('#')) ||                              // Single hashtag
+            (item.str.match(/#\w+\s+#\w+/)) ||                               // Multiple hashtags
+            item.str.split(' ').every(word => word.startsWith('#')) ||       // Line containing only hashtags
+            
+            // Copyright and sharing notices
+            item.str.includes('©') ||                                          // Copyright symbol
+            item.str.toLowerCase().includes('copyright') ||                    // Copyright word
+            (item.str.toLowerCase().includes('#') && 
+             item.str.toLowerCase().includes('instagram')) ||                  // Instagram hashtag instructions
+            (item.str.toLowerCase().includes('dele') && 
+             item.str.toLowerCase().includes('instagram')) ||                  // Sharing on Instagram
+            
+            // Photo credits
+            (item.str.toLowerCase().startsWith('foto:')) ||                   // Photo credit
+            
+            // Page numbers
+            (item.str.match(/^side\s*\d+$/i) && item.str.length < 10) ||    // Exact "Side X"
+            (item.str.match(/^page\s*\d+$/i) && item.str.length < 10) ||    // Exact "Page X"
+            
+            // Copyright notices - check for partial matches
+            item.str.toLowerCase().includes('oppskriften er kun til privat') ||
+            item.str.toLowerCase().includes('skal ikke kopieres') ||
+            item.str.toLowerCase().includes('skal ikke deles') ||
+            item.str.toLowerCase().includes('må ikke deles') ||
+            item.str.toLowerCase().includes('kun til privat bruk') ||
+            item.str.toLowerCase().includes('systematisk salg') ||            // Commercial use notice
+            
+            // Social sharing instructions
+            (item.str.toLowerCase().includes('#') && 
+             item.str.toLowerCase().includes('del')) ||                      // Sharing instructions with hashtags
+            
+            // Author/Designer credits
+            (item.str.includes('//') && item.str.includes('@')) ||          // Author with social handle
+            (item.str.match(/^[\w\s]+©/));                                  // Author name with copyright
+
+          if (isFooterContent) {
+            console.log('Filtered out:', originalStr, 'due to footer pattern match');
+            continue;
+          }
+          
+          // Check if we need to add a new line
+          if (lastY && (lastY - item.transform[5]) > 5) {
+            text += '\n';
+            
+            // Add extra line break if the gap is larger
+            if ((lastY - item.transform[5]) > 15) {
+              text += '\n';
+            }
+          }
+          
+          // Add space if needed based on x-position difference with previous item
+          if (j > 0 && item.transform[4] - items[j-1].transform[4] > 10) {
+            text += ' ';
+          }
+          
+          text += item.str;
+          lastY = item.transform[5];
+        }
+        
+        extractedText += text + '\n\n';
       }
+
+      // Clean up excessive line breaks and whitespace
+      extractedText = extractedText
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/[ \t]+$/gm, '')
+        .trim();
 
       // Get category information
       const { category, categoryName } = extractSizesAndMeasurements(extractedText);
