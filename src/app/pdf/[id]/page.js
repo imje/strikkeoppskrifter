@@ -287,51 +287,69 @@ const highlightSizePosition = (text, selectedSize, sizes) => {
   const sizeIndex = sizes.indexOf(selectedSize);
   let highlightedText = text;
 
-  // Find all sequences of numbers with parentheses
-  const numberSequencePattern = /(?:(?:\d+\.?(?:[,-]\d+)?|–|-)\s*(?:\([^)]+\)\s*)*)+/g;
+  // Patterns for different number sequences
+  const patterns = [
+    // Original pattern for inline sequences with parentheses
+    /(?:(?:\d+\.?(?:[,-]\d+)?|–|-)\s*(?:\([^)]+\)\s*)*)+/g,
+    
+    // Pattern for tabular data after dots or measurements
+    /(?:\.{3,}|cm)\s*((?:\d+(?:[,-]\d+)?|–|-)\s*)+/g,
+    
+    // Pattern for sequences of measurements with units
+    /(?:\d+\s*(?:cm|g|m)\s*){2,}/g,
+    
+    // Pattern for sequences starting with a period
+    /\.\s*(?:\d+\s*(?:cm|g|m)\s*){2,}/g
+  ];
   
-  const matches = text.match(numberSequencePattern);
-  if (!matches) return text;
+  patterns.forEach(pattern => {
+    const matches = text.match(pattern);
+    if (!matches) return;
 
-  matches.forEach(sequence => {
-    const numbers = [];
-    let sequenceCopy = sequence;
-    
-    const numberPattern = /(\d+\.?(?:[,-]\d+)?|–|-)|(?:\((\d+\.?(?:[,-]\d+)?|–|-)\))/g;
-    let match;
-    
-    // Collect all numbers in this sequence
-    while ((match = numberPattern.exec(sequenceCopy)) !== null) {
-      const number = match[1] || match[2];
-      numbers.push({
-        number,
-        position: match.index,
-        length: match[0].length,
-        isInParentheses: match[2] !== undefined
-      });
-    }
-
-    // Only process this sequence if it has enough numbers to be a valid pattern
-    // (at least the size of our sizes array)
-    if (numbers.length >= sizes.length) {
-      // Group numbers by their position in the pattern
-      const groupedNumbers = [];
-      for (let i = 0; i < numbers.length; i++) {
-        if (i % sizes.length === sizeIndex) {
-          groupedNumbers.push(numbers[i]);
+    matches.forEach(sequence => {
+      const numbers = [];
+      let sequenceCopy = sequence;
+      
+      // Match numbers with their units
+      const numberPattern = /(\d+\.?(?:[,-]\d+)?|–|-)\s*(cm|g|m)?/g;
+      let match;
+      
+      // Collect all numbers in this sequence
+      while ((match = numberPattern.exec(sequenceCopy)) !== null) {
+        const number = match[1];
+        const unit = match[2] || '';
+        if (number) { // Make sure we have a valid number
+          numbers.push({
+            number,
+            unit,
+            position: match.index,
+            length: match[0].length,
+            isInParentheses: false
+          });
         }
       }
 
-      // Highlight each matching number in this valid sequence
-      groupedNumbers.reverse().forEach(({ number, position, length }) => {
-        const before = sequence.slice(0, position);
-        const after = sequence.slice(position + length);
-        const highlighted = `<span class="bg-yellow-200 px-1 rounded">${number}</span>`;
-        sequence = before + highlighted + after;
-      });
+      // Only process if we have enough numbers to be a valid pattern
+      if (numbers.length >= sizes.length) {
+        // Group numbers by their position in the pattern
+        const groupedNumbers = [];
+        for (let i = 0; i < numbers.length; i++) {
+          if (i % sizes.length === sizeIndex) {
+            groupedNumbers.push(numbers[i]);
+          }
+        }
 
-      highlightedText = highlightedText.replace(sequenceCopy, sequence);
-    }
+        // Highlight each matching number with its unit
+        groupedNumbers.reverse().forEach(({ number, unit, position, length }) => {
+          const before = sequence.slice(0, position);
+          const after = sequence.slice(position + length);
+          const highlighted = `<span class="bg-yellow-200 px-1 rounded">${number}${unit ? ' ' + unit : ''}</span>`;
+          sequence = before + highlighted + after;
+        });
+
+        highlightedText = highlightedText.replace(sequenceCopy, sequence);
+      }
+    });
   });
 
   return highlightedText;
