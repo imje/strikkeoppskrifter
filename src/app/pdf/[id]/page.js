@@ -281,6 +281,65 @@ const isValidLetterSize = (size) => {
   return validSizes.includes(size);
 };
 
+const highlightSizePosition = (text, selectedSize, sizes) => {
+  if (!selectedSize || !sizes.includes(selectedSize)) return text;
+
+  const sizeIndex = sizes.indexOf(selectedSize);
+  let highlightedText = text;
+
+  // Find all sequences of numbers with parentheses
+  const numberSequencePattern = /(?:(?:\d+\.?(?:[,-]\d+)?|–|-)\s*(?:\([^)]+\)\s*)*)+/g;
+  
+  const matches = text.match(numberSequencePattern);
+  if (!matches) return text;
+
+  matches.forEach(sequence => {
+    const numbers = [];
+    let sequenceCopy = sequence;
+    
+    // Match either:
+    // - A dash/minus (– or -)
+    // - A number with optional:
+    //   - trailing period (15.)
+    //   - decimal (23,5)
+    //   - range (200-225)
+    // - All of the above in parentheses
+    const numberPattern = /(\d+\.?(?:[,-]\d+)?|–|-)|(?:\((\d+\.?(?:[,-]\d+)?|–|-)\))/g;
+    let match;
+    
+    while ((match = numberPattern.exec(sequenceCopy)) !== null) {
+      const number = match[1] || match[2]; // Get the number/dash whether it's in parentheses or not
+      const isInParentheses = match[2] !== undefined;
+      numbers.push({
+        number,
+        position: match.index,
+        length: match[0].length,
+        isInParentheses
+      });
+    }
+
+    // Group numbers by their position in the pattern
+    const groupedNumbers = [];
+    for (let i = 0; i < numbers.length; i++) {
+      if (i % sizes.length === sizeIndex) {
+        groupedNumbers.push(numbers[i]);
+      }
+    }
+
+    // Highlight each matching number/dash, working backwards to maintain positions
+    groupedNumbers.reverse().forEach(({ number, position, length }) => {
+      const before = sequence.slice(0, position);
+      const after = sequence.slice(position + length);
+      const highlighted = `<span class="bg-yellow-200 px-1 rounded">${number}</span>`;
+      sequence = before + highlighted + after;
+    });
+
+    highlightedText = highlightedText.replace(sequenceCopy, sequence);
+  });
+
+  return highlightedText;
+};
+
 export default function PdfPage() {
   const [document, setDocument] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -374,7 +433,12 @@ export default function PdfPage() {
           <div className="prose max-w-none">
             {document.extracted_text.split('\n\n').map((section, index) => (
               <div key={index} className="mb-4">
-                <p className="whitespace-pre-wrap">{section}</p>
+                <p 
+                  className="whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{ 
+                    __html: highlightSizePosition(section, selectedSize, sizes) 
+                  }}
+                />
               </div>
             ))}
           </div>
