@@ -318,7 +318,7 @@ const highlightSizePosition = (text, selectedSize, sizes) => {
       while ((match = numberPattern.exec(sequenceCopy)) !== null) {
         const number = match[1];
         const unit = match[2] || '';
-        if (number) { // Make sure we have a valid number
+        if (number) {
           numbers.push({
             number,
             unit,
@@ -331,23 +331,22 @@ const highlightSizePosition = (text, selectedSize, sizes) => {
 
       // Only process if we have enough numbers to be a valid pattern
       if (numbers.length >= sizes.length) {
-        // Group numbers by their position in the pattern
-        const groupedNumbers = [];
-        for (let i = 0; i < numbers.length; i++) {
-          if (i % sizes.length === sizeIndex) {
-            groupedNumbers.push(numbers[i]);
-          }
+        const groupSize = Math.floor(numbers.length / sizes.length) * sizes.length;
+        
+        // Find the target number for the selected size
+        const targetGroupIndex = Math.floor(sizeIndex * (numbers.length / sizes.length));
+        const targetNumbers = numbers.slice(targetGroupIndex, targetGroupIndex + (groupSize / sizes.length));
+        
+        // Create a replacement with only the target numbers
+        let newSequence = '';
+        if (targetNumbers.length > 0) {
+          const numberStr = targetNumbers.map(n => 
+            `<span class="bg-yellow-200 px-1 rounded">${n.number}${n.unit ? ' ' + n.unit : ''}</span>`
+          ).join(' ');
+          newSequence = numberStr;
         }
 
-        // Highlight each matching number with its unit
-        groupedNumbers.reverse().forEach(({ number, unit, position, length }) => {
-          const before = sequence.slice(0, position);
-          const after = sequence.slice(position + length);
-          const highlighted = `<span class="bg-yellow-200 px-1 rounded">${number}${unit ? ' ' + unit : ''}</span>`;
-          sequence = before + highlighted + after;
-        });
-
-        highlightedText = highlightedText.replace(sequenceCopy, sequence);
+        highlightedText = highlightedText.replace(sequenceCopy, newSequence);
       }
     });
   });
