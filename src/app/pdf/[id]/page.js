@@ -450,28 +450,11 @@ export default function PdfPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-[var(--mainheader)]">
-          {document.display_title || document.file_name.replace(/\.pdf$/i, '')}
-        </h1>
-        <button
-          onClick={() => {
-            if (window.confirm('Are you sure you want to delete this pattern?')) {
-              handleDelete();
-            }
-          }}
-          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-          aria-label="Delete pattern"
-        >
-          Delete Pattern
-        </button>
-      </div>
-
       <main className="max-w-4xl mx-auto">
         {/* Title and Category Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-blue-900 mb-2">
-            {document.display_title || document.file_name}
+          <h1 className="text-3xl font-bold text-[var(--mainheader)] mb-2">
+            {document.display_title || document.file_name.replace(/\.pdf$/i, '')}
           </h1>
           {document.category_name && (
             <span className="inline-block px-3 py-1 rounded-md bg-purple-100 text-purple-800 text-sm font-medium">
@@ -497,7 +480,7 @@ export default function PdfPage() {
           ))}
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
           <p className="text-sm text-gray-500 mb-4">
             Uploaded on {new Date(document.created_at).toLocaleDateString()}
           </p>
@@ -513,6 +496,20 @@ export default function PdfPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Delete button at bottom */}
+        <div className="mt-8 pb-8 flex justify-end">
+          <button
+            onClick={() => {
+              if (window.confirm('Are you sure you want to delete this pattern?')) {
+                handleDelete();
+              }
+            }}
+            className="px-6 py-3 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+          >
+            Slett strikkeoppskrift
+          </button>
         </div>
       </main>
     </div>
