@@ -203,6 +203,35 @@ export default function PdfUploader({ onUploadSuccess }) {
     }
   };
 
+  // Update the knitting header patterns
+  const isKnittingHeader = (line) => {
+    // Define exact header words with their proper capitalization
+    const headerPatterns = {
+      'Bol': /^(?:\d+\s+)?bol(?:\s|$)/i,
+      'Erme': /^(?:\d+\s+)?erme(?:\s|$)/i,
+      'Ermer': /^(?:\d+\s+)?ermer(?:\s|$)/i,
+      'Forstykke': /^(?:\d+\s+)?forstykke(?:\s|$)/i,
+      'Bakstykke': /^(?:\d+\s+)?bakstykke(?:\s|$)/i,
+      'Bærestykke': /^(?:\d+\s+)?bærestykke(?:\s|$)/i,
+      'Halskant': /^(?:\d+\s+)?halskant(?:\s|$)/i,
+      'Montering': /^(?:\d+\s+)?montering(?:\s|$)/i,
+      'Høyre erme': /^(?:\d+\s+)?høyre\s+erme(?:\s|$)/i,
+      'Venstre erme': /^(?:\d+\s+)?venstre\s+erme(?:\s|$)/i,
+      'Krage': /^(?:\d+\s+)?krage(?:\s|$)/i
+    };
+    
+    // Clean the line
+    const cleanLine = line.trim();
+    
+    // Return the matched header with proper capitalization
+    for (const [header, pattern] of Object.entries(headerPatterns)) {
+      if (cleanLine.match(pattern)) {
+        return header;  // Return the properly capitalized header
+      }
+    }
+    return null;
+  };
+
   const handleFileUpload = async (e) => {
     try {
       if (!user) {
@@ -370,11 +399,16 @@ export default function PdfUploader({ onUploadSuccess }) {
             if (currentLine) {
               currentLine = currentLine.trim();
               
-              // Add line breaks based on content type
-              if (isPatternHeader(currentLine)) {
-                text += '\n\n<h3>' + currentLine + '</h3>\n';
+              const headerWord = isKnittingHeader(currentLine);
+              if (headerWord) {
+                // Remove any leading numbers and the header word from the rest of the line
+                const cleanedLine = currentLine.replace(/^\d+\s+/, '');
+                const restOfLine = cleanedLine.substring(headerWord.length).trim();
+                text += '\n\n<h3>' + headerWord + '</h3>\n' + restOfLine + '\n';
               } else if (currentLine.match(/^[A-ZÆØÅ\s]{5,}:?$/)) {
                 text += '\n\n' + currentLine + '\n\n';
+              } else if (currentLine.match(/^(?:STØRRELSE|STRIKKEFASTHET|PINNER|GARNFORSLAG|TILBEHØR|MÅL|FORKORTELSER):/i)) {
+                text += '\n\n' + currentLine + '\n';
               } else {
                 text += currentLine + '\n';
               }
