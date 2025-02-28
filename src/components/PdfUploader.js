@@ -232,6 +232,107 @@ export default function PdfUploader({ onUploadSuccess }) {
     return null;
   };
 
+  const formatTextWithBold = (text) => {
+    // Define all patterns that need to be handled
+    const patterns = [
+      {
+        pattern: /Blusens\s*\n*\s*overvidde:/g,
+        replacement: '\nBlusens overvidde:'
+      },
+      {
+        pattern: /Veiledende\s*\n*\s*pinner:/g,
+        replacement: '\nVeiledende pinner:'
+      },
+      {
+        pattern: /Genseens\s*\n*\s*overvidde:/g,
+        replacement: '\nGenseens overvidde:'
+      },
+      {
+        pattern: /Genserens\s*\n*\s*overvidde:/g,
+        replacement: '\nGenserens overvidde:'
+      },
+      {
+        pattern: /\b(Materialer|Material):/g,
+        replacement: '\n$1:'
+      },
+      {
+        pattern: /\b(Strikkefasthet|Strikkefastheten):/g,
+        replacement: '\n$1:'
+      },
+      {
+        pattern: /\b(Pinner|Pinneforslag):/g,
+        replacement: '\n$1:'
+      },
+      {
+        pattern: /\b(Overvidde):/g,
+        replacement: '\n$1:'
+      },
+      {
+        pattern: /\b(Garnforslag|Garn|Garnalternativ|Garnkvalitet):/g,
+        replacement: '\n$1:'
+      },
+      {
+        pattern: /\b(Størrelse|Størrelser|Str\.):/g,
+        replacement: '\n$1:'
+      },
+      {
+        pattern: /\b(Tilbehør):/g,
+        replacement: '\n$1:'
+      },
+      {
+        pattern: /\b(Mål):/g,
+        replacement: '\n$1:'
+      },
+      {
+        pattern: /\b(Lengde):/g,
+        replacement: '\n$1:'
+      },
+      {
+        pattern: /\b(Forkortelser):/g,
+        replacement: '\n$1:'
+      }
+    ];
+
+    let formattedText = text;
+
+    // Apply all patterns
+    patterns.forEach(({ pattern, replacement }) => {
+      formattedText = formattedText.replace(pattern, replacement);
+    });
+
+    // Now make all the terms bold
+    formattedText = formattedText.replace(
+      /((?:Blusens|Genseens|Genserens)\s+overvidde|Veiledende\s+pinner|Materialer?|Strikkefasthet(?:en)?|Pinner|Pinneforslag|Overvidde|Garnforslag|Garn|Garnalternativ|Garnkvalitet|Størrelser?|Str\.|Tilbehør|Mål|Lengde|Forkortelser):/g,
+      '<span class="font-bold">$1:</span>'
+    );
+
+    return formattedText;
+  };
+
+  const processPage = async (page) => {
+    const textContent = await page.getTextContent();
+    let text = await page.getTextContent();
+    
+    // Convert text content to string and fix line breaks
+    let rawText = textContent.items.map(item => item.str).join(' ');
+    
+    // Fix the broken phrases first
+    rawText = rawText
+      .replace(/Blusens\s*\n*\s*overvidde/g, 'Blusens overvidde')
+      .replace(/Veiledende\s*\n*\s*pinner/g, 'Veiledende pinner')
+      .replace(/Genseens\s*\n*\s*overvidde/g, 'Genseens overvidde')
+      .replace(/Genserens\s*\n*\s*overvidde/g, 'Genserens overvidde');
+
+    // Split into lines and clean up
+    let lines = rawText.split(/\n+/);
+    lines = lines.map(line => line.trim()).filter(line => line);
+
+    // Join the lines back with proper line breaks
+    text = lines.join('\n');
+
+    return text;
+  };
+
   const handleFileUpload = async (e) => {
     try {
       if (!user) {
@@ -318,6 +419,20 @@ export default function PdfUploader({ onUploadSuccess }) {
         let currentLine = '';  // Add this to track the current line
         const items = textContent.items;
         
+        // Add this function inside handleFileUpload
+        const shouldKeepTogether = (line, nextStr) => {
+          const prefixes = [
+            'Veiledende',
+            'Blusens',
+            'Genseens',
+            'Genserens'
+          ];
+          return prefixes.some(prefix => 
+            line.trim() === prefix || 
+            (line.includes(prefix) && !line.includes(prefix + ' '))
+          );
+        };
+
         for (let j = 0; j < items.length; j++) {
           const item = items[j];
           
@@ -376,14 +491,15 @@ export default function PdfUploader({ onUploadSuccess }) {
           const currentY = item.transform[5];
           const verticalGap = lastY ? Math.abs(lastY - currentY) : 0;
           
-          // Check if this should be a line continuation
+          // Modified line continuation check
           const shouldContinueLine = 
             currentLine && (
-              currentLine.endsWith('=') ||                    // Line ends with equals
-              currentLine.match(/\d+\s*$/) ||                // Line ends with number
-              item.str.match(/^\s*\d+/) ||                   // Next line starts with number
-              verticalGap < 5 ||                             // Very small vertical gap
-              (currentLine.length + item.str.length < 60)    // Combined length is reasonable
+              shouldKeepTogether(currentLine, item.str) ||          // Check for phrases to keep together
+              currentLine.endsWith('=') ||                          // Line ends with equals
+              currentLine.match(/\d+\s*$/) ||                      // Line ends with number
+              item.str.match(/^\s*\d+/) ||                         // Next line starts with number
+              verticalGap < 5 ||                                   // Very small vertical gap
+              (currentLine.length + item.str.length < 60)          // Combined length is reasonable
             );
 
           if (shouldContinueLine) {
@@ -404,20 +520,18 @@ export default function PdfUploader({ onUploadSuccess }) {
                 // Remove any leading numbers and the header word from the rest of the line
                 const cleanedLine = currentLine.replace(/^\d+\s+/, '');
                 const restOfLine = cleanedLine.substring(headerWord.length).trim();
-                text += '\n\n<h3>' + headerWord + '</h3>\n' + restOfLine + '\n';
+                text += '\n\n<h3>' + headerWord + '</h3>\n' + formatTextWithBold(restOfLine) + '\n';
               } else if (currentLine.match(/^[A-ZÆØÅ\s]{5,}:?$/)) {
-                text += '\n\n' + currentLine + '\n\n';
+                text += '\n\n' + formatTextWithBold(currentLine) + '\n\n';
               } else if (currentLine.match(/^(?:STØRRELSE|STRIKKEFASTHET|PINNER|GARNFORSLAG|TILBEHØR|MÅL|FORKORTELSER):/i)) {
-                text += '\n\n' + currentLine + '\n';
+                text += '\n\n' + formatTextWithBold(currentLine) + '\n';
               } else {
-                text += currentLine + '\n';
+                text += formatTextWithBold(currentLine) + '\n';
               }
             }
             
             // Start new line
-            currentLine = item.str
-              .replace(/\.{3,}/g, '')     // Remove dot sequences
-              .replace(/\s{2,}/g, ' ');   // Normalize spaces
+            currentLine = item.str;
           }
           
           lastY = currentY;
