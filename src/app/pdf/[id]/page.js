@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 const PATTERN_CATEGORIES = {
   SWEATER: {
@@ -361,6 +361,58 @@ export default function PdfPage() {
   const [measurements, setMeasurements] = useState({});
   const [selectedSize, setSelectedSize] = useState(null);
   const params = useParams();
+  const router = useRouter();
+
+  const handleDelete = async () => {
+    try {
+      if (!document) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { error: dbError } = await supabase
+        .from('pdf_documents')
+        .delete()
+        .match({
+          id: document.id,
+          user_id: user.id
+        });
+
+      if (dbError) throw dbError;
+
+      if (document.file_path) {
+        const pdfPath = document.file_path.endsWith('.pdf') 
+          ? document.file_path 
+          : `${document.file_path}.pdf`;
+        
+        const { error: pdfError } = await supabase.storage
+          .from('pdfs')
+          .remove([pdfPath]);
+        
+        if (pdfError) {
+          console.error('Error deleting PDF file:', pdfError);
+        }
+      }
+
+      if (document.thumbnail_path) {
+        const { error: thumbError } = await supabase.storage
+          .from('pdfs')
+          .remove([document.thumbnail_path]);
+        
+        if (thumbError) {
+          console.error('Error deleting thumbnail:', thumbError);
+        }
+      }
+
+      router.push('/');
+
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Error deleting document: ' + error.message);
+    }
+  };
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -397,7 +449,24 @@ export default function PdfPage() {
   if (!document) return <div>Document not found</div>;
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-[var(--mainheader)]">
+          {document.display_title || document.file_name.replace(/\.pdf$/i, '')}
+        </h1>
+        <button
+          onClick={() => {
+            if (window.confirm('Are you sure you want to delete this pattern?')) {
+              handleDelete();
+            }
+          }}
+          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+          aria-label="Delete pattern"
+        >
+          Delete Pattern
+        </button>
+      </div>
+
       <main className="max-w-4xl mx-auto">
         {/* Title and Category Section */}
         <div className="mb-8">
