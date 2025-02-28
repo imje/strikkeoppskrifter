@@ -244,18 +244,6 @@ export default function PdfList({ newDocument, onUploadSuccess }) {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {filteredDocuments.map((doc) => (
             <div key={doc.id} className="flex flex-col items-center relative">
-              <button
-                onClick={() => {
-                  console.log('Delete button clicked for document:', doc);
-                  handleDelete(doc.id, doc.file_path, doc.thumbnail_path);
-                }}
-                className="absolute top-0 right-0 z-10 p-2 bg-red-500 rounded-full text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-                aria-label="Delete document"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
               <Link href={`/pdf/${doc.id}`} className="mb-3">
                 <div className="w-48 h-48 relative">
                   <svg
