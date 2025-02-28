@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
-export default function Auth({ className }) {
+export default function Auth({ className, showAuthForm: externalShowAuthForm, alignRight = true }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [user, setUser] = useState(null);
   const [showAuthForm, setShowAuthForm] = useState(false);
+  const authRef = useRef(null);
 
   useEffect(() => {
     // Get current user
@@ -27,6 +28,31 @@ export default function Auth({ className }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (externalShowAuthForm !== undefined) {
+      setShowAuthForm(externalShowAuthForm);
+    }
+  }, [externalShowAuthForm]);
+
+  useEffect(() => {
+    // Handle clicks outside of the auth form
+    const handleClickOutside = (event) => {
+      if (authRef.current && !authRef.current.contains(event.target)) {
+        setShowAuthForm(false);
+      }
+    };
+
+    // Add event listener when the form is shown
+    if (showAuthForm) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    // Cleanup the event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAuthForm]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
@@ -75,7 +101,7 @@ export default function Auth({ className }) {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={authRef}>
       <button
         onClick={() => setShowAuthForm(!showAuthForm)}
         className={className || "px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"}
@@ -84,7 +110,7 @@ export default function Auth({ className }) {
       </button>
 
       {showAuthForm && (
-        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 z-50">
+        <div className={`absolute ${alignRight ? 'right-0' : 'left-0'} mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 z-50`}>
           <h2 className="text-2xl font-bold mb-6">{isSignUp ? 'Sign Up' : 'Sign In'}</h2>
           <form onSubmit={handleAuth} className="space-y-4">
             <div>

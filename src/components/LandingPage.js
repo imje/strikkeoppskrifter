@@ -1,5 +1,6 @@
 import { Playfair_Display } from 'next/font/google';
 import Auth from './Auth';
+import { useState } from 'react';
 
 const playfair = Playfair_Display({ 
   subsets: ['latin'],
@@ -10,7 +11,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
+      <div className="relative">
         <div className="max-w-7xl mx-auto">
           <div className="relative z-10 pb-8 sm:pb-16 md:pb-20 lg:w-full lg:pb-28 xl:pb-32">
             <main className="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
@@ -24,8 +25,11 @@ export default function LandingPage() {
                   Last opp PDF-filer, kategoriser dem, og få en oversiktlig visning av størrelser og mål.
                 </p>
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
-                  <div className="rounded-md shadow">
-                    <Auth className="w-full flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-white bg-[var(--mainheader)] hover:bg-[var(--mainheader)]/90" />
+                  <div className="rounded-md shadow relative">
+                    <Auth 
+                      className="w-full flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-white bg-[var(--mainheader)] hover:bg-[var(--mainheader)]/90"
+                      alignRight={false}
+                    />
                   </div>
                 </div>
               </div>
