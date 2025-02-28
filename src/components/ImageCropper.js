@@ -49,47 +49,48 @@ export default function ImageCropper({ imageData, onCropComplete, onCancel }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-auto overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl w-[90vw] max-w-2xl mx-auto overflow-hidden flex flex-col" style={{ maxHeight: '90vh' }}>
         {/* Header */}
-        <div className="bg-[var(--mainheader)] px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">Velg miniatyrbilde</h2>
+        <div className="bg-[var(--mainheader)] px-6 py-3 flex items-center justify-between shrink-0">
+          <h2 className="text-lg font-bold text-white">Velg miniatyrbilde</h2>
           <button 
             onClick={onCancel}
             className="text-white hover:text-gray-200 transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Crop Area */}
-        <div className="p-6">
-          <div className="max-h-[60vh] overflow-auto bg-gray-50 rounded-lg">
-            <ReactCrop
-              crop={crop}
-              onChange={c => setCrop(c)}
-              onComplete={c => setCompletedCrop(c)}
-              aspect={1}
-              className="max-w-full"
-            >
-              <img
-                ref={imgRef}
-                src={imageData}
-                alt="Pattern preview"
-                className="max-w-full h-auto"
-              />
-            </ReactCrop>
+        <div className="p-4 flex-grow overflow-hidden">
+          <div className="h-full flex flex-col">
+            <div className="flex-grow overflow-hidden bg-gray-50 rounded-lg">
+              <ReactCrop
+                crop={crop}
+                onChange={c => setCrop(c)}
+                onComplete={c => setCompletedCrop(c)}
+                aspect={1}
+                className="max-h-full"
+              >
+                <img
+                  ref={imgRef}
+                  src={imageData}
+                  alt="Pattern preview"
+                  className="max-h-[calc(90vh-12rem)] w-auto mx-auto"
+                  style={{ objectFit: 'contain' }}
+                />
+              </ReactCrop>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">
+              Velg et kvadratisk område som skal brukes som miniatyrbilde for mønsteret ditt.
+            </p>
           </div>
-          
-          {/* Instructions */}
-          <p className="mt-4 text-sm text-gray-600">
-            Velg et kvadratisk område som skal brukes som miniatyrbilde for mønsteret ditt.
-          </p>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t flex justify-end gap-3">
+        <div className="px-6 py-3 bg-gray-50 border-t flex justify-end gap-3 shrink-0">
           <button
             onClick={onCancel}
             className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
