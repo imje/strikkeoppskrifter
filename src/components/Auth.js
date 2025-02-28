@@ -57,6 +57,7 @@ export default function Auth({ className }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      setShowAuthForm(false);
     } catch (error) {
       alert(error.message);
     }
@@ -77,7 +78,7 @@ export default function Auth({ className }) {
     <div className="relative">
       <button
         onClick={() => setShowAuthForm(!showAuthForm)}
-        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        className={className || "px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"}
       >
         Logg inn
       </button>
