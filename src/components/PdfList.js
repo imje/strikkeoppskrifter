@@ -11,6 +11,7 @@ export default function PdfList({ newDocument, onUploadSuccess }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const addSignedUrl = async (doc) => {
     if (doc.thumbnail_path) {
@@ -29,15 +30,25 @@ export default function PdfList({ newDocument, onUploadSuccess }) {
   useEffect(() => {
     const fetchDocuments = async () => {
       try {
+        console.log('Fetching documents...'); // Debug log
+        
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
         const { data: docs, error } = await supabase
           .from('pdf_documents')
           .select('*')
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
 
+        console.log('Fetched documents:', docs); // Debug log
+
         const docsWithUrls = await Promise.all(docs.map(addSignedUrl));
         setDocuments(docsWithUrls);
+        console.log('Updated documents state with:', docsWithUrls); // Debug log
       } catch (error) {
         console.error('Error fetching documents:', error);
       } finally {
@@ -46,7 +57,7 @@ export default function PdfList({ newDocument, onUploadSuccess }) {
     };
 
     fetchDocuments();
-  }, []);
+  }, [refreshTrigger]);
 
   // Update the useEffect for newDocument handling
   useEffect(() => {
@@ -104,6 +115,88 @@ export default function PdfList({ newDocument, onUploadSuccess }) {
     }
   };
 
+  const handleDelete = async (id, filePath, thumbnailPath) => {
+    try {
+      console.log('Starting deletion process...', { id, filePath, thumbnailPath });
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      console.log('Current user:', user.id);
+
+      // Delete the database record with match criteria
+      const { data: deletedData, error: dbError } = await supabase
+        .from('pdf_documents')
+        .delete()
+        .match({
+          id: id,
+          user_id: user.id
+        })
+        .select();
+
+      console.log('Database deletion response:', { deletedData, dbError });
+
+      if (dbError) {
+        console.error('Error deleting from database:', dbError);
+        throw dbError;
+      }
+
+      if (!deletedData || deletedData.length === 0) {
+        throw new Error('Document not found or not authorized to delete');
+      }
+
+      // Delete storage files only if database deletion was successful
+      const pdfPath = filePath.endsWith('.pdf') ? filePath : `${filePath}.pdf`;
+      console.log('Attempting to delete PDF file:', pdfPath);
+
+      const { error: pdfError } = await supabase.storage
+        .from('pdfs')
+        .remove([pdfPath]);
+      
+      if (pdfError) {
+        console.error('Error deleting PDF file:', pdfError);
+      }
+
+      if (thumbnailPath) {
+        console.log('Attempting to delete thumbnail:', thumbnailPath);
+        const { error: thumbError } = await supabase.storage
+          .from('pdfs')
+          .remove([thumbnailPath]);
+        
+        if (thumbError) {
+          console.error('Error deleting thumbnail:', thumbError);
+        }
+      }
+
+      // Update local state immediately after successful database deletion
+      setDocuments(prevDocs => {
+        const updatedDocs = prevDocs.filter(doc => doc.id !== id);
+        console.log('Updating local state:', updatedDocs);
+        return updatedDocs;
+      });
+
+      // Double-check the deletion
+      const { data: checkDoc, error: checkError } = await supabase
+        .from('pdf_documents')
+        .select()
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking deletion:', checkError);
+      } else {
+        console.log('Deletion verification:', checkDoc ? 'Document still exists' : 'Document successfully deleted');
+      }
+
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      alert('Error deleting document: ' + error.message);
+    }
+  };
+
   // Filter documents based on selected category
   const filteredDocuments = documents.filter(doc => {
     if (selectedCategory === 'ALL') return true;
@@ -150,7 +243,19 @@ export default function PdfList({ newDocument, onUploadSuccess }) {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {filteredDocuments.map((doc) => (
-            <div key={doc.id} className="flex flex-col items-center">
+            <div key={doc.id} className="flex flex-col items-center relative">
+              <button
+                onClick={() => {
+                  console.log('Delete button clicked for document:', doc);
+                  handleDelete(doc.id, doc.file_path, doc.thumbnail_path);
+                }}
+                className="absolute top-0 right-0 z-10 p-2 bg-red-500 rounded-full text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+                aria-label="Delete document"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
               <Link href={`/pdf/${doc.id}`} className="mb-3">
                 <div className="w-48 h-48 relative">
                   <svg
