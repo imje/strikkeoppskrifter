@@ -286,6 +286,7 @@ export default function PdfUploader({ onUploadSuccess }) {
         const pageHeight = viewport.height;
         
         let lastY, text = '';
+        let currentLine = '';  // Add this to track the current line
         const items = textContent.items;
         
         for (let j = 0; j < items.length; j++) {
@@ -343,41 +344,55 @@ export default function PdfUploader({ onUploadSuccess }) {
             continue;
           }
           
-          // Check if this is a pattern section header
-          const isHeader = isPatternHeader(item.str);
+          const currentY = item.transform[5];
+          const verticalGap = lastY ? Math.abs(lastY - currentY) : 0;
+          
+          // Check if this should be a line continuation
+          const shouldContinueLine = 
+            currentLine && (
+              currentLine.endsWith('=') ||                    // Line ends with equals
+              currentLine.match(/\d+\s*$/) ||                // Line ends with number
+              item.str.match(/^\s*\d+/) ||                   // Next line starts with number
+              verticalGap < 5 ||                             // Very small vertical gap
+              (currentLine.length + item.str.length < 60)    // Combined length is reasonable
+            );
 
-          // Check if we need to add a new line
-          if (lastY && (lastY - item.transform[5]) > 5) {
-            text += '\n';
+          if (shouldContinueLine) {
+            // Add a space if needed between parts
+            if (!currentLine.endsWith(' ') && !item.str.startsWith(' ')) {
+              currentLine += ' ';
+            }
+            currentLine += item.str
+              .replace(/\.{3,}/g, '')     // Remove dot sequences
+              .replace(/\s{2,}/g, ' ');   // Normalize spaces
+          } else {
+            // Process and add the completed line if we have one
+            if (currentLine) {
+              currentLine = currentLine.trim();
+              
+              // Add line breaks based on content type
+              if (isPatternHeader(currentLine)) {
+                text += '\n\n<h3>' + currentLine + '</h3>\n';
+              } else if (currentLine.match(/^[A-ZÆØÅ\s]{5,}:?$/)) {
+                text += '\n\n' + currentLine + '\n\n';
+              } else {
+                text += currentLine + '\n';
+              }
+            }
             
-            // Add extra line break if the gap is larger
-            if ((lastY - item.transform[5]) > 15) {
-              text += '\n';
-            }
+            // Start new line
+            currentLine = item.str
+              .replace(/\.{3,}/g, '')     // Remove dot sequences
+              .replace(/\s{2,}/g, ' ');   // Normalize spaces
           }
           
-          // Add space if needed based on x-position difference with previous item
-          if (j > 0 && item.transform[4] - items[j-1].transform[4] > 10) {
-            text += ' ';
-          }
-
-          // Add header markdown if it's a header
-          if (isHeader) {
-            // Check if we need a newline before the header
-            if (!text.endsWith('\n\n')) {
-              text += '\n\n';
-            }
-            text += '<h3>';  // Use h3 tag instead of **
-          }
-          
-          text += item.str;
-
-          // Close header formatting if it's a header
-          if (isHeader) {
-            text += '</h3>\n';
-          }
-          
-          lastY = item.transform[5];
+          lastY = currentY;
+        }
+        
+        // Add final line if exists
+        if (currentLine) {
+          currentLine = currentLine.trim();
+          text += currentLine + '\n';
         }
         
         extractedText += text + '\n\n';
