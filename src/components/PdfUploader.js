@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { extractSizesAndMeasurements } from '@/lib/patternUtils';
+import ImageCropper from './ImageCropper';
 
 // Dynamically import PDF.js only on client side
 const initPdfLib = async () => {
@@ -18,6 +19,9 @@ export default function PdfUploader({ onUploadSuccess }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [showCropper, setShowCropper] = useState(false);
+  const [imageData, setImageData] = useState(null);
+  const [pendingUpload, setPendingUpload] = useState(null);
 
   useEffect(() => {
     // Initialize PDF.js when component mounts
@@ -307,306 +311,137 @@ export default function PdfUploader({ onUploadSuccess }) {
     return text;
   };
 
-  const handleFileUpload = async (e) => {
+  const generateInitialImage = async (pdf) => {
     try {
-      if (!user) {
-        alert('Please log in to upload documents');
-        return;
-      }
-
-      setLoading(true);
-      const file = e.target.files[0];
-      if (!file || !file.type.includes('pdf')) {
-        alert('Please upload a PDF file');
-        return;
-      }
-
-      const sanitizedFileName = cleanFileName(file.name);
-      console.log('Initial sanitized filename:', sanitizedFileName); // Debug log
-
-      // Create optimistic document data
-      const timestamp = Date.now();
-      const optimisticDoc = {
-        id: `temp-${sanitizedFileName}`,
-        file_name: sanitizedFileName,
-        display_title: sanitizedFileName,
-        created_at: new Date().toISOString(),
-      };
-
-      console.log('Optimistic doc:', optimisticDoc); // Debug log
-
-      // Immediately call onUploadSuccess with optimistic data
-      if (onUploadSuccess) {
-        onUploadSuccess(optimisticDoc);
-      }
-
-      // Continue with actual upload process
-      console.log('Starting upload process...');
-
-      const pdfjsLib = await initPdfLib();
-      if (!pdfjsLib) {
-        throw new Error('PDF.js failed to initialize');
-      }
-
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument(new Uint8Array(arrayBuffer)).promise;
+      const firstPage = await pdf.getPage(1);
+      const scale = 2;
+      const viewport = firstPage.getViewport({ scale });
       
-      // Extract title using filename as reference
-      const pdfTitle = await extractPdfTitle(pdf, file.name);
-      const displayTitle = pdfTitle || sanitizedFileName;
-      console.log('Final display title:', displayTitle); // Debug log
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
 
-      console.log('Generating thumbnail...');
-      const thumbnailBlob = await generateThumbnail(pdf);
-      console.log('Thumbnail size:', thumbnailBlob.size, 'bytes');
+      context.fillStyle = '#FFFFFF';
+      context.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Define pattern section headers
-      const patternSectionHeaders = [
-        'HALSKANT',
-        'BRODERING',
-        'ERMER',
-        'BOL',
-        'BÆRESTYKKE',
-        'FORSTYKKE',
-        'BAKSTYKKE',
-        'HØYRE SKULDER',
-        'VENSTRE SKULDER',
-      ];
+      await firstPage.render({
+        canvasContext: context,
+        viewport: viewport,
+        background: 'white',
+        intent: 'display',
+      }).promise;
 
-      const isPatternHeader = (str) => {
-        const normalizedStr = str.trim().toUpperCase();
-        return patternSectionHeaders.some(header => 
-          normalizedStr === header ||
-          normalizedStr.startsWith(header + ':')
-        );
-      };
-
-      console.log('Extracting text...');
-      let extractedText = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const viewport = page.getViewport({ scale: 1.0 });
-        const pageHeight = viewport.height;
-        
-        let lastY, text = '';
-        let currentLine = '';  // Add this to track the current line
-        const items = textContent.items;
-        
-        // Add this function inside handleFileUpload
-        const shouldKeepTogether = (line, nextStr) => {
-          const prefixes = [
-            'Veiledende',
-            'Blusens',
-            'Genseens',
-            'Genserens'
-          ];
-          return prefixes.some(prefix => 
-            line.trim() === prefix || 
-            (line.includes(prefix) && !line.includes(prefix + ' '))
-          );
-        };
-
-        for (let j = 0; j < items.length; j++) {
-          const item = items[j];
-          
-          // Debug log for filtered items
-          const originalStr = item.str;
-          
-          // Filter out footer and copyright content regardless of position
-          const isFooterContent = 
-            // Social media and web patterns
-            (item.str.includes('@') && item.str.includes('www.')) ||           // Combined social media and web
-            (item.str.match(/^@[\w.]+$/)) ||                                   // Standalone social media handle
-            (item.str.match(/^www\.[\w.]+$/i)) ||                             // Standalone website URL
-            (item.str.includes('@') && item.str.includes('//')) ||            // Author with social media
-            
-            // Hashtags
-            (item.str.trim().startsWith('#')) ||                              // Single hashtag
-            (item.str.match(/#\w+\s+#\w+/)) ||                               // Multiple hashtags
-            item.str.split(' ').every(word => word.startsWith('#')) ||       // Line containing only hashtags
-            
-            // Copyright and sharing notices
-            item.str.includes('©') ||                                          // Copyright symbol
-            item.str.toLowerCase().includes('copyright') ||                    // Copyright word
-            (item.str.toLowerCase().includes('#') && 
-             item.str.toLowerCase().includes('instagram')) ||                  // Instagram hashtag instructions
-            (item.str.toLowerCase().includes('dele') && 
-             item.str.toLowerCase().includes('instagram')) ||                  // Sharing on Instagram
-            
-            // Photo credits
-            (item.str.toLowerCase().startsWith('foto:')) ||                   // Photo credit
-            
-            // Page numbers
-            (item.str.match(/^side\s*\d+$/i) && item.str.length < 10) ||    // Exact "Side X"
-            (item.str.match(/^page\s*\d+$/i) && item.str.length < 10) ||    // Exact "Page X"
-            
-            // Copyright notices - check for partial matches
-            item.str.toLowerCase().includes('oppskriften er kun til privat') ||
-            item.str.toLowerCase().includes('skal ikke kopieres') ||
-            item.str.toLowerCase().includes('skal ikke deles') ||
-            item.str.toLowerCase().includes('må ikke deles') ||
-            item.str.toLowerCase().includes('kun til privat bruk') ||
-            item.str.toLowerCase().includes('systematisk salg') ||            // Commercial use notice
-            
-            // Social sharing instructions
-            (item.str.toLowerCase().includes('#') && 
-             item.str.toLowerCase().includes('del')) ||                      // Sharing instructions with hashtags
-            
-            // Author/Designer credits
-            (item.str.includes('//') && item.str.includes('@')) ||          // Author with social handle
-            (item.str.match(/^[\w\s]+©/));                                  // Author name with copyright
-
-          if (isFooterContent) {
-            console.log('Filtered out:', originalStr, 'due to footer pattern match');
-            continue;
-          }
-          
-          const currentY = item.transform[5];
-          const verticalGap = lastY ? Math.abs(lastY - currentY) : 0;
-          
-          // Modified line continuation check
-          const shouldContinueLine = 
-            currentLine && (
-              shouldKeepTogether(currentLine, item.str) ||          // Check for phrases to keep together
-              currentLine.endsWith('=') ||                          // Line ends with equals
-              currentLine.match(/\d+\s*$/) ||                      // Line ends with number
-              item.str.match(/^\s*\d+/) ||                         // Next line starts with number
-              verticalGap < 5 ||                                   // Very small vertical gap
-              (currentLine.length + item.str.length < 60)          // Combined length is reasonable
-            );
-
-          if (shouldContinueLine) {
-            // Add a space if needed between parts
-            if (!currentLine.endsWith(' ') && !item.str.startsWith(' ')) {
-              currentLine += ' ';
-            }
-            currentLine += item.str
-              .replace(/\.{3,}/g, '')     // Remove dot sequences
-              .replace(/\s{2,}/g, ' ');   // Normalize spaces
-          } else {
-            // Process and add the completed line if we have one
-            if (currentLine) {
-              currentLine = currentLine.trim();
-              
-              const headerWord = isKnittingHeader(currentLine);
-              if (headerWord) {
-                // Remove any leading numbers and the header word from the rest of the line
-                const cleanedLine = currentLine.replace(/^\d+\s+/, '');
-                const restOfLine = cleanedLine.substring(headerWord.length).trim();
-                text += '\n\n<h3>' + headerWord + '</h3>\n' + formatTextWithBold(restOfLine) + '\n';
-              } else if (currentLine.match(/^[A-ZÆØÅ\s]{5,}:?$/)) {
-                text += '\n\n' + formatTextWithBold(currentLine) + '\n\n';
-              } else if (currentLine.match(/^(?:STØRRELSE|STRIKKEFASTHET|PINNER|GARNFORSLAG|TILBEHØR|MÅL|FORKORTELSER):/i)) {
-                text += '\n\n' + formatTextWithBold(currentLine) + '\n';
-              } else {
-                text += formatTextWithBold(currentLine) + '\n';
-              }
-            }
-            
-            // Start new line
-            currentLine = item.str;
-          }
-          
-          lastY = currentY;
-        }
-        
-        // Add final line if exists
-        if (currentLine) {
-          currentLine = currentLine.trim();
-          text += currentLine + '\n';
-        }
-        
-        extractedText += text + '\n\n';
-      }
-
-      // Clean up excessive line breaks and whitespace
-      extractedText = extractedText
-        .replace(/\n{4,}/g, '\n\n\n')  // Allow up to 3 consecutive line breaks
-        .replace(/\*\* \n/g, '**\n')    // Clean up bold formatting
-        .replace(/[ \t]+$/gm, '')       // Remove trailing spaces
-        .trim();
-
-      // Get category information
-      const { category, categoryName } = extractSizesAndMeasurements(extractedText);
-      console.log('Category info:', { category, categoryName }); // Debug log
-
-      // Create file paths
-      const fileName = `${timestamp}-${sanitizedFileName}`;
-      const filePath = `${user.id}/${fileName}`;
-      const thumbnailPath = `${user.id}/thumbnails/${timestamp}-thumbnail.jpg`;
-
-      console.log('Uploading PDF...');
-      // Upload PDF
-      const { data: pdfData, error: pdfError } = await supabase.storage
-        .from('pdfs')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (pdfError) {
-        console.error('PDF upload error:', pdfError);
-        throw new Error(`PDF upload failed: ${pdfError.message}`);
-      }
-
-      console.log('Uploading thumbnail...');
-      // Upload thumbnail
-      const { data: thumbData, error: thumbError } = await supabase.storage
-        .from('pdfs')
-        .upload(thumbnailPath, thumbnailBlob, {
-          contentType: 'image/jpeg',
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (thumbError) {
-        console.error('Thumbnail upload error:', thumbError);
-        throw new Error(`Thumbnail upload failed: ${thumbError.message}`);
-      }
-
-      console.log('Saving to database...');
-      // Save to database
-      const { data: dbData, error: dbError } = await supabase
-        .from('pdf_documents')
-        .insert({
-          user_id: user.id,
-          file_name: sanitizedFileName,
-          display_title: displayTitle,
-          file_path: filePath,
-          thumbnail_path: thumbnailPath,
-          extracted_text: extractedText,
-          category: category || null,
-          category_name: categoryName || null
-        })
-        .select()
-        .single();
-
-      console.log('Database response:', dbData); // Debug log
-
-      if (dbError) {
-        console.error('Database error:', dbError);
-        throw new Error(`Database operation failed: ${dbError.message}`);
-      }
-
-      console.log('Upload completed successfully');
-
-      if (dbData) {
-        const finalDoc = {
-          ...dbData,
-          display_title: displayTitle,
-          file_name: sanitizedFileName,
-          thumbnailUrl: null
-        };
-        console.log('Final document being sent:', finalDoc); // Debug log
-        onUploadSuccess(finalDoc);
-      }
+      return canvas.toDataURL('image/jpeg');
     } catch (error) {
-      console.error('Error in handleFileUpload:', error);
-      alert('An error occurred while uploading the file. Please try again later.');
+      console.error('Error generating initial image:', error);
+      throw error;
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file || !file.type.includes('pdf')) return;
+
+    try {
+      setLoading(true);
+      const pdfjsLib = await initPdfLib();
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+      
+      // Generate initial image for cropping
+      const imageData = await generateInitialImage(pdf);
+      
+      // Store file and pdf data for later use
+      setPendingUpload({ file, pdf });
+      
+      // Show cropper with the generated image
+      setImageData(imageData);
+      setShowCropper(true);
+    } catch (error) {
+      console.error('Error preparing file:', error);
+      alert('Error preparing file for upload');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCropComplete = async (croppedBlob) => {
+    if (!pendingUpload) return;
+    
+    try {
+      setLoading(true);
+      setShowCropper(false);
+      
+      const { file, pdf } = pendingUpload;
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) throw new Error('No user found');
+
+      // Extract text and title from PDF
+      const numPages = pdf.numPages;
+      let fullText = '';
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n\n';
+      }
+
+      // Extract display title
+      const displayTitle = await extractPdfTitle(pdf, file.name);
+
+      // Upload PDF file
+      const timestamp = Date.now();
+      const cleanedFileName = cleanFileName(file.name);
+      const filePath = `${user.data.user.id}/${timestamp}-${cleanedFileName}`;
+      const { error: uploadError } = await supabase.storage
+        .from('pdfs')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Upload thumbnail
+      const thumbnailPath = `${user.data.user.id}/thumbnails/${timestamp}-thumbnail.jpg`;
+      const { error: thumbError } = await supabase.storage
+        .from('pdfs')
+        .upload(thumbnailPath, croppedBlob);
+
+      if (thumbError) throw thumbError;
+
+      // Save document info to database
+      const { data: doc, error: dbError } = await supabase
+        .from('pdf_documents')
+        .insert([{
+          user_id: user.data.user.id,
+          file_name: cleanedFileName,
+          display_title: displayTitle,
+          file_path: filePath,
+          thumbnail_path: thumbnailPath,
+          extracted_text: fullText
+        }])
+        .select()
+        .single();
+
+      if (dbError) throw dbError;
+
+      if (onUploadSuccess) {
+        onUploadSuccess(doc);
+      }
+
+    } catch (error) {
+      console.error('Error in upload:', error);
+      alert('Error uploading file');
+    } finally {
+      setLoading(false);
+      setPendingUpload(null);
+      setImageData(null);
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setImageData(null);
+    setPendingUpload(null);
   };
 
   return (
@@ -619,9 +454,7 @@ export default function PdfUploader({ onUploadSuccess }) {
           className="hidden"
           disabled={loading}
         />
-        <div 
-          className="w-12 h-12 rounded-full bg-[var(--mainheader)] flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
-        >
+        <div className="w-12 h-12 rounded-full bg-[var(--mainheader)] flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity">
           {loading ? (
             <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
@@ -641,6 +474,14 @@ export default function PdfUploader({ onUploadSuccess }) {
           )}
         </div>
       </label>
+
+      {showCropper && imageData && (
+        <ImageCropper
+          imageData={imageData}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 }
