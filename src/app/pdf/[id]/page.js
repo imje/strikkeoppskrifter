@@ -292,14 +292,14 @@ const highlightSizePosition = (text, selectedSize, sizes) => {
     // Original pattern for inline sequences with parentheses
     /(?:(?:\d+\.?(?:[,-]\d+)?|–|-)\s*(?:\([^)]+\)\s*)*)+/g,
     
-    // Pattern for tabular data after dots or measurements
-    /(?:\.{3,}|cm)\s*((?:\d+(?:[,-]\d+)?|–|-)\s*)+/g,
+    // Pattern for sequences of measurements with units (including those starting with period)
+    /(?:\.|^)\s*(?:\d+\s*(?:cm|g|m)\s*){2,}/g,
     
-    // Pattern for sequences of measurements with units
-    /(?:\d+\s*(?:cm|g|m)\s*){2,}/g,
+    // Pattern for sequences after dots
+    /\.{3,}\s*(?:\d+\s*(?:cm|g|m)?\s*){2,}/g,
     
-    // Pattern for sequences starting with a period
-    /\.\s*(?:\d+\s*(?:cm|g|m)\s*){2,}/g
+    // Pattern for size-like formatted rows (with multiple spaces between items)
+    /(?:^|\n)\s*(?:[\w\s]+:)?\s*(?:\d+\s*(?:cm|g|m)?\s+){2,}/g
   ];
   
   patterns.forEach(pattern => {
