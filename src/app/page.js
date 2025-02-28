@@ -13,11 +13,15 @@ export default function Home() {
 
   return (
     <section>
-      <div className="flex items-center gap-4 mb-8">
-        <h2 className="text-2xl font-bold text-[var(--mainheader)]">Strikkeoppskrifter</h2>
-        <PdfUploader onUploadSuccess={handleUploadSuccess} />
+      <div className="flex flex-col gap-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-[var(--mainheader)]">
+            Strikkeoppskrifter
+          </h2>
+          <PdfUploader onUploadSuccess={handleUploadSuccess} />
+        </div>
+        <PdfList newDocument={newDocument} onUploadSuccess={handleUploadSuccess} />
       </div>
-      <PdfList newDocument={newDocument} onUploadSuccess={handleUploadSuccess} />
     </section>
   );
 }
