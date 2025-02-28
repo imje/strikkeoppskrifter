@@ -238,7 +238,8 @@ export default function PdfUploader({ onUploadSuccess }) {
       'Blusens overvidde',
       'Veiledende pinner',
       'Genseens overvidde',
-      'Genserens overvidde'
+      'Genserens overvidde',
+      'Plaggets mål'
     ];
 
     const singleWordTerms = [
