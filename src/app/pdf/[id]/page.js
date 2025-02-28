@@ -412,7 +412,6 @@ export default function PdfPage() {
           )}
         </div>
         
-        
         {/* Size buttons */}
         <div className="flex flex-wrap gap-2 mb-4">
           {sizes.map((size) => (
@@ -429,18 +428,6 @@ export default function PdfPage() {
             </button>
           ))}
         </div>
-
-        {/* Measurements display */}
-        {selectedSize && measurements[selectedSize] && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Measurements for size {selectedSize}:</h3>
-            <div className="space-y-2">
-              {Object.entries(measurements[selectedSize]).map(([key, { value, unit }]) => (
-                <p key={key}>{formatMeasurementName(key)}: {value} {unit}</p>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-sm text-gray-500 mb-4">

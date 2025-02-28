@@ -256,7 +256,27 @@ export default function PdfUploader({ onUploadSuccess }) {
       const thumbnailBlob = await generateThumbnail(pdf);
       console.log('Thumbnail size:', thumbnailBlob.size, 'bytes');
 
-      // Extract text with formatting
+      // Define pattern section headers
+      const patternSectionHeaders = [
+        'HALSKANT',
+        'BRODERING',
+        'ERMER',
+        'BOL',
+        'BÆRESTYKKE',
+        'FORSTYKKE',
+        'BAKSTYKKE',
+        'HØYRE SKULDER',
+        'VENSTRE SKULDER',
+      ];
+
+      const isPatternHeader = (str) => {
+        const normalizedStr = str.trim().toUpperCase();
+        return patternSectionHeaders.some(header => 
+          normalizedStr === header ||
+          normalizedStr.startsWith(header + ':')
+        );
+      };
+
       console.log('Extracting text...');
       let extractedText = '';
       for (let i = 1; i <= pdf.numPages; i++) {
@@ -323,6 +343,9 @@ export default function PdfUploader({ onUploadSuccess }) {
             continue;
           }
           
+          // Check if this is a pattern section header
+          const isHeader = isPatternHeader(item.str);
+
           // Check if we need to add a new line
           if (lastY && (lastY - item.transform[5]) > 5) {
             text += '\n';
@@ -337,8 +360,23 @@ export default function PdfUploader({ onUploadSuccess }) {
           if (j > 0 && item.transform[4] - items[j-1].transform[4] > 10) {
             text += ' ';
           }
+
+          // Add header markdown if it's a header
+          if (isHeader) {
+            // Check if we need a newline before the header
+            if (!text.endsWith('\n\n')) {
+              text += '\n\n';
+            }
+            text += '<h3>';  // Use h3 tag instead of **
+          }
           
           text += item.str;
+
+          // Close header formatting if it's a header
+          if (isHeader) {
+            text += '</h3>\n';
+          }
+          
           lastY = item.transform[5];
         }
         
@@ -347,8 +385,9 @@ export default function PdfUploader({ onUploadSuccess }) {
 
       // Clean up excessive line breaks and whitespace
       extractedText = extractedText
-        .replace(/\n{3,}/g, '\n\n')
-        .replace(/[ \t]+$/gm, '')
+        .replace(/\n{4,}/g, '\n\n\n')  // Allow up to 3 consecutive line breaks
+        .replace(/\*\* \n/g, '**\n')    // Clean up bold formatting
+        .replace(/[ \t]+$/gm, '')       // Remove trailing spaces
         .trim();
 
       // Get category information

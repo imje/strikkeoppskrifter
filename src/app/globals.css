@@ -33,3 +33,12 @@ h1 {
   font-size: 2.5rem;  /* or 40px */
   font-weight: 700;
 }
+
+h3 {
+  color: var(--accent);
+  font-size: 1.25rem;  /* 20px */
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-family: inherit;
+}
